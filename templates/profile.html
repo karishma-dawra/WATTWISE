@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}Profile · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1 data-i18n="profile.title">Profile</h1><p data-i18n="profile.sub">Your details, meter and household. Everything here is saved to your account.</p></div></div>
+<div class="tabs" role="tablist">
+  <button class="tab on" data-tab="personal" data-i18n="profile.tab.personal">Personal Information</button>
+  <button class="tab" data-tab="meter" data-i18n="profile.tab.meter">Electricity Meter Details</button>
+  <button class="tab" data-tab="household" data-i18n="profile.tab.household">Household Setup</button>
+  <button class="tab" data-tab="appliances" data-i18n="profile.tab.appliances">Appliance Configuration</button>
+  <button class="tab" data-tab="prefs" data-i18n="profile.tab.prefs">Preferences</button>
+</div>
+
+<section class="tabpanel card" data-panel="personal">
+  <form id="fPersonal" class="form-grid" novalidate>
+    <div><label data-i18n="profile.fullname">Full name</label><input id="p_name" maxlength="80"><div class="field-err" data-for="full_name"></div></div>
+    <div><label data-i18n="profile.mobile">Mobile number</label><input id="p_mobile" inputmode="numeric"><div class="field-err" data-for="mobile"></div></div>
+    <div><label data-i18n="profile.email">Email</label><input id="p_email" type="email"><div class="field-err" data-for="email"></div></div>
+    <div><label data-i18n="profile.city">City</label><input id="p_city" maxlength="80"><div class="field-err" data-for="city"></div></div>
+    <div><label data-i18n="profile.family">Family size</label><input id="p_family" type="number" min="1" max="30" step="1"><div class="field-err" data-for="family_size"></div></div>
+    <div class="full row" style="justify-content:flex-end"><button class="btn btn-primary" type="submit" id="p_save" data-i18n="common.save">Save</button></div>
+  </form>
+</section>
+
+<section class="tabpanel card" data-panel="meter" hidden>
+  <form id="fMeter" class="form-grid" novalidate>
+    <div><label data-i18n="profile.provider">Electricity provider (DISCOM)</label><input id="m_provider" maxlength="80" placeholder="e.g. PSPCL"></div>
+    <div><label data-i18n="profile.consumer">Consumer / meter number</label><input id="m_consumer" maxlength="40"></div>
+    <div><label data-i18n="profile.metertype">Meter type</label>
+      <select id="m_metertype"><option>Smart</option><option>Digital</option><option>Traditional</option></select></div>
+    <div><label data-i18n="profile.connection">Connection type</label>
+      <select id="m_connection"><option>Domestic</option><option>Commercial</option></select></div>
+    <div><label data-i18n="profile.load">Sanctioned load (kW)</label><input id="m_load" type="number" min="0" step="0.1"></div>
+    <div><label data-i18n="profile.budget">Monthly electricity budget (units)</label><input id="m_budget" type="number" min="0.01" step="any"><div class="field-err" data-for="budget"></div></div>
+    <div><label data-i18n="profile.tariff">Tariff per unit (₹)</label><input id="m_tariff" type="number" min="0" step="0.01"><div class="field-err" data-for="tariff"></div></div>
+    <div><label data-i18n="profile.billdate">Billing cycle / bill date</label><input id="m_billdate" maxlength="20" placeholder="e.g. 5th of each month"></div>
+    <div class="full row" style="justify-content:flex-end"><button class="btn btn-primary" type="submit" id="m_save" data-i18n="common.save">Save</button></div>
+  </form>
+</section>
+
+<section class="tabpanel card" data-panel="household" hidden>
+  <form id="fHousehold" class="form-grid" novalidate>
+    <div><label data-i18n="profile.hometype">Home type</label>
+      <select id="h_hometype"><option>Apartment</option><option>Independent House</option><option>Rented House</option></select></div>
+    <div><label data-i18n="profile.rooms">Number of rooms</label><input id="h_rooms" type="number" min="1" max="50" step="1"></div>
+    <div><label data-i18n="profile.floors">Number of floors</label><input id="h_floors" type="number" min="1" max="30" step="1"></div>
+    <div><label data-i18n="profile.members">Number of family members</label><input id="h_members" type="number" min="1" max="30" step="1"></div>
+    <div class="full row" style="justify-content:flex-end"><button class="btn btn-primary" type="submit" id="h_save" data-i18n="common.save">Save</button></div>
+  </form>
+</section>
+
+<section class="tabpanel card" data-panel="appliances" hidden>
+  <p class="text2 small" data-i18n="profile.apps_hint">Add, edit or remove appliances on the Appliances page. Appliances you do not own are not counted.</p>
+  <div id="pApps" class="app-grid" style="margin-top:14px"></div>
+  <div class="row" style="margin-top:18px"><a class="btn btn-primary" href="/appliances" data-i18n="profile.apps_open">Open Appliances</a></div>
+</section>
+
+<section class="tabpanel card" data-panel="prefs" hidden>
+  <div class="form-grid">
+    <div><label data-i18n="profile.language">Language</label>
+      <select id="x_lang"><option value="en">English</option><option value="hi">हिंदी (Hindi)</option></select>
+      <div class="hint">Applies across WATTWISE and is saved to your account.</div></div>
+  </div>
+  <h3 style="margin:26px 0 12px" data-i18n="profile.password">Change password</h3>
+  <form id="fPassword" class="form-grid" novalidate>
+    <div><label data-i18n="profile.current">Current password</label><input id="x_cur" type="password" autocomplete="current-password"></div>
+    <div><label data-i18n="profile.newpw">New password</label><input id="x_new" type="password" autocomplete="new-password"><div class="hint">6 characters or more.</div></div>
+    <div class="full row" style="justify-content:flex-end"><button class="btn" type="submit" id="x_pw_save" data-i18n="common.save">Save</button></div>
+  </form>
+</section>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,476 @@
+{
+  "_about": "WattWise weather-to-appliance usage rules. These are STARTING RULES for an Indian middle-class household, not universal fixed hours. Edit values here; the app reloads this file automatically, no code change needed. Ranges: a band includes its min and excludes its max, except the last band, which includes its max. Every table must be contiguous from its range start to its range end.",
+  "version": 1,
+  "limits": {
+    "_about": "Hard daily ceilings per appliance kind, so no plan recommends an unrealistic runtime.",
+    "default_max_hours": 24,
+    "ac": 14,
+    "cooler": 16,
+    "fan": 16,
+    "heater": 10,
+    "geyser": 2,
+    "lighting": 24,
+    "laundry": 4,
+    "fridge": 24,
+    "baseline": 24
+  },
+  "cooling_bands": {
+    "_about": "Used for AC, cooler and fan. Driven by the APPARENT high temperature (feels-like), falling back to the plain daily high. 'fraction' is the share of the appliance's typical full-use hours. 'floor_fraction' is the minimum share that is never cut, for safety.",
+    "range": [
+      -10,
+      60
+    ],
+    "bands": [
+      {
+        "id": "cold_below_25",
+        "min": -10,
+        "max": 25,
+        "label": "Below 25°C: no cooling needed",
+        "kinds": {
+          "ac": {
+            "fraction": 0.0,
+            "floor_fraction": 0.0,
+            "note": "AC not needed below 25°C by default."
+          },
+          "cooler": {
+            "fraction": 0.0,
+            "floor_fraction": 0.0,
+            "note": "Cooler not needed below 25°C."
+          },
+          "fan": {
+            "fraction": 0.2,
+            "floor_fraction": 0.0,
+            "note": "Fan only when needed for comfort."
+          }
+        },
+        "notes": [
+          "Generally no AC cooling below 20°C; fans only when needed."
+        ]
+      },
+      {
+        "id": "mild_25_30",
+        "min": 25,
+        "max": 30,
+        "label": "25–30°C: mild, comfort-based cooling",
+        "kinds": {
+          "ac": {
+            "fraction": 0.15,
+            "floor_fraction": 0.0,
+            "note": "AC only if indoor cooling is required."
+          },
+          "cooler": {
+            "fraction": 0.2,
+            "floor_fraction": 0.0,
+            "note": "Cooler for comfort on dry days."
+          },
+          "fan": {
+            "fraction": 0.6,
+            "floor_fraction": 0.2,
+            "note": "Fan recommended according to comfort."
+          }
+        },
+        "notes": []
+      },
+      {
+        "id": "warm_30_35",
+        "min": 30,
+        "max": 35,
+        "label": "30–35°C: warm, calculated cooling",
+        "kinds": {
+          "ac": {
+            "fraction": 0.5,
+            "floor_fraction": 0.2,
+            "note": "AC hours calculated for warm conditions."
+          },
+          "cooler": {
+            "fraction": 0.6,
+            "floor_fraction": 0.1,
+            "note": "Air cooler useful if humidity is low."
+          },
+          "fan": {
+            "fraction": 0.8,
+            "floor_fraction": 0.4,
+            "note": "Fans recommended."
+          }
+        },
+        "notes": [
+          "Increase cooling where needed; consider fans and air coolers."
+        ]
+      },
+      {
+        "id": "hot_35_40",
+        "min": 35,
+        "max": 40,
+        "label": "35–40°C: hot, higher cooling",
+        "kinds": {
+          "ac": {
+            "fraction": 0.75,
+            "floor_fraction": 0.4,
+            "note": "Higher cooling requirement."
+          },
+          "cooler": {
+            "fraction": 0.6,
+            "floor_fraction": 0.1,
+            "note": "Cooler helpful only in dry air."
+          },
+          "fan": {
+            "fraction": 1.0,
+            "floor_fraction": 0.5,
+            "note": "Fans at full comfort use."
+          }
+        },
+        "notes": [
+          "AC and fan hours are calculated from the forecast and the budget."
+        ]
+      },
+      {
+        "id": "very_hot_40_45",
+        "min": 40,
+        "max": 45,
+        "label": "40–45°C: very hot, prioritise cooling",
+        "kinds": {
+          "ac": {
+            "fraction": 1.0,
+            "floor_fraction": 0.6,
+            "note": "Necessary cooling is prioritised; not cut below 60%."
+          },
+          "cooler": {
+            "fraction": 0.5,
+            "floor_fraction": 0.1,
+            "note": "Cooler far less effective at this heat."
+          },
+          "fan": {
+            "fraction": 1.0,
+            "floor_fraction": 0.6,
+            "note": "Fans at full use."
+          }
+        },
+        "notes": [
+          "Schedule AC around the available budget; keep essential cooling."
+        ]
+      },
+      {
+        "id": "extreme_45_60",
+        "min": 45,
+        "max": 60,
+        "label": "45–60°C: extreme heat warning",
+        "kinds": {
+          "ac": {
+            "fraction": 1.0,
+            "floor_fraction": 0.8,
+            "note": "Extreme heat: essential cooling is never reduced below 80%."
+          },
+          "cooler": {
+            "fraction": 0.4,
+            "floor_fraction": 0.0,
+            "note": "Coolers are not adequate in extreme heat."
+          },
+          "fan": {
+            "fraction": 1.0,
+            "floor_fraction": 0.6,
+            "note": "Fans at full use alongside AC."
+          }
+        },
+        "notes": [
+          "Extreme heat warning: prioritise household cooling and safety (hydration, elderly and children)."
+        ]
+      }
+    ]
+  },
+  "heating_bands": {
+    "_about": "Used for heater and geyser. Driven by the DAILY LOW temperature. 'hours' is a fixed household estimate in hours per day; 'fraction' is a share of typical full-use hours.",
+    "range": [
+      -10,
+      60
+    ],
+    "bands": [
+      {
+        "id": "extreme_cold_below_0",
+        "min": -10,
+        "max": 0,
+        "label": "Below 0°C: extreme cold",
+        "kinds": {
+          "heater": {
+            "fraction": 1.0,
+            "floor_fraction": 0.8,
+            "note": "Extreme cold: necessary heating is prioritised."
+          },
+          "geyser": {
+            "hours": 1.5,
+            "floor_hours": 1.0,
+            "note": "Hot water needed for safety and comfort in extreme cold."
+          }
+        },
+        "notes": [
+          "Extreme cold: prioritise necessary heating and hot water."
+        ]
+      },
+      {
+        "id": "very_cold_0_10",
+        "min": 0,
+        "max": 10,
+        "label": "0–10°C: very cold, heater by comfort and budget",
+        "kinds": {
+          "heater": {
+            "fraction": 1.0,
+            "floor_fraction": 0.5,
+            "note": "Heater usage set by wattage, comfort and budget."
+          },
+          "geyser": {
+            "hours": 1.5,
+            "floor_hours": 0.75,
+            "note": "Morning and evening hot water."
+          }
+        },
+        "notes": []
+      },
+      {
+        "id": "cold_10_20",
+        "min": 10,
+        "max": 20,
+        "label": "10–20°C: cold, short heater sessions",
+        "kinds": {
+          "heater": {
+            "fraction": 0.6,
+            "floor_fraction": 0.2,
+            "note": "Short heater sessions in the coldest hours."
+          },
+          "geyser": {
+            "hours": 1.0,
+            "floor_hours": 0.5,
+            "note": "Initial household estimate for hot water."
+          }
+        },
+        "notes": []
+      },
+      {
+        "id": "cool_20_25",
+        "min": 20,
+        "max": 25,
+        "label": "20–25°C: cool, no AC, geyser estimate",
+        "kinds": {
+          "heater": {
+            "fraction": 0.2,
+            "floor_fraction": 0.0,
+            "note": "Heater only if the room feels cold."
+          },
+          "geyser": {
+            "hours": 1.0,
+            "floor_hours": 0.5,
+            "note": "Initial household estimate: 1 hour (based on hot-water needs)."
+          }
+        },
+        "notes": [
+          "Generally no AC cooling; consider heater only if needed."
+        ]
+      },
+      {
+        "id": "mild_25_30",
+        "min": 25,
+        "max": 30,
+        "label": "25–30°C: geyser by hot-water needs",
+        "kinds": {
+          "heater": {
+            "fraction": 0.0,
+            "floor_fraction": 0.0,
+            "note": "No heating needed."
+          },
+          "geyser": {
+            "hours": 0.5,
+            "floor_hours": 0.25,
+            "note": "Hot water based on household needs."
+          }
+        },
+        "notes": []
+      },
+      {
+        "id": "warm_30_60",
+        "min": 30,
+        "max": 60,
+        "label": "Above 30°C: no heating, minimal hot water",
+        "kinds": {
+          "heater": {
+            "fraction": 0.0,
+            "floor_fraction": 0.0,
+            "note": "No heating needed."
+          },
+          "geyser": {
+            "hours": 0.25,
+            "floor_hours": 0.25,
+            "note": "Short hot-water use only; bathing still needs some heating."
+          }
+        },
+        "notes": []
+      }
+    ]
+  },
+  "humidity_bands": {
+    "_about": "Relative humidity (daily mean, %). 'cooler_effectiveness' scales air-cooler hours. 'apparent_bonus_c' is added to the high temperature only when the forecast gives no apparent temperature (the provider's apparent value already includes humidity).",
+    "range": [
+      0,
+      100
+    ],
+    "bands": [
+      {
+        "id": "low_0_30",
+        "min": 0,
+        "max": 30,
+        "label": "Low humidity (0–30%)",
+        "cooler_effectiveness": 1.0,
+        "apparent_bonus_c": 0.0,
+        "notes": [
+          "Low humidity: air coolers work well."
+        ]
+      },
+      {
+        "id": "moderate_30_60",
+        "min": 30,
+        "max": 60,
+        "label": "Moderate humidity (30–60%)",
+        "cooler_effectiveness": 0.8,
+        "apparent_bonus_c": 0.5,
+        "notes": []
+      },
+      {
+        "id": "high_60_80",
+        "min": 60,
+        "max": 80,
+        "label": "High humidity (60–80%)",
+        "cooler_effectiveness": 0.4,
+        "apparent_bonus_c": 1.5,
+        "notes": [
+          "High humidity reduces air-cooler effectiveness; AC is the better choice."
+        ]
+      },
+      {
+        "id": "very_high_80_100",
+        "min": 80,
+        "max": 100,
+        "label": "Very high humidity (80–100%)",
+        "cooler_effectiveness": 0.1,
+        "apparent_bonus_c": 3.0,
+        "notes": [
+          "Very high humidity: air coolers are not effective; dehumidification may help comfort."
+        ]
+      }
+    ]
+  },
+  "rainfall_bands": {
+    "_about": "Daily precipitation in mm. Multipliers scale hours. Rain must never INCREASE AC, cooler, fan or geyser hours, so those multipliers are capped at 1.0 by validation.",
+    "range": [
+      0,
+      500
+    ],
+    "bands": [
+      {
+        "id": "no_rain",
+        "min": 0,
+        "max": 0.1,
+        "label": "No rainfall",
+        "ac_multiplier": 1.0,
+        "cooler_multiplier": 1.0,
+        "fan_multiplier": 1.0,
+        "geyser_multiplier": 1.0,
+        "lighting_multiplier": 1.0,
+        "laundry_multiplier": 1.0,
+        "notes": []
+      },
+      {
+        "id": "light_rain",
+        "min": 0.1,
+        "max": 2.5,
+        "label": "Light rainfall",
+        "ac_multiplier": 1.0,
+        "cooler_multiplier": 0.9,
+        "fan_multiplier": 1.0,
+        "geyser_multiplier": 1.0,
+        "lighting_multiplier": 1.05,
+        "laundry_multiplier": 0.8,
+        "notes": [
+          "Light rain: a little less daylight than usual."
+        ]
+      },
+      {
+        "id": "moderate_rain",
+        "min": 2.5,
+        "max": 7.5,
+        "label": "Moderate rainfall",
+        "ac_multiplier": 1.0,
+        "cooler_multiplier": 0.6,
+        "fan_multiplier": 1.0,
+        "geyser_multiplier": 1.0,
+        "lighting_multiplier": 1.15,
+        "laundry_multiplier": 0.5,
+        "notes": [
+          "Moderate rain: natural daylight is lower, so lighting may be needed; coolers are less effective in humid rain."
+        ]
+      },
+      {
+        "id": "heavy_rain",
+        "min": 7.5,
+        "max": 500,
+        "label": "Heavy rainfall",
+        "ac_multiplier": 1.0,
+        "cooler_multiplier": 0.3,
+        "fan_multiplier": 1.0,
+        "geyser_multiplier": 1.0,
+        "lighting_multiplier": 1.3,
+        "laundry_multiplier": 0.2,
+        "notes": [
+          "Heavy rain: lighting is needed for longer; cooler effectiveness drops sharply."
+        ]
+      }
+    ]
+  },
+  "rain_probability_bands": {
+    "_about": "Chance of rain (%). Used for advice and notes only; it never changes AC or geyser hours.",
+    "range": [
+      0,
+      100
+    ],
+    "bands": [
+      {
+        "id": "rain_unlikely",
+        "min": 0,
+        "max": 30,
+        "label": "Rain unlikely (under 30%)",
+        "notes": []
+      },
+      {
+        "id": "rain_possible",
+        "min": 30,
+        "max": 60,
+        "label": "Rain possible (30–60%)",
+        "notes": [
+          "Dry weather: no rain expected."
+        ]
+      },
+      {
+        "id": "rain_likely",
+        "min": 60,
+        "max": 100,
+        "label": "Rain likely (60% or more)",
+        "notes": [
+          "Rain likely: keep lights on for dark rooms."
+        ]
+      }
+    ]
+  },
+  "baseline": {
+    "_about": "Appliances with no weather rule (fridge, TV, laptop, pumps and so on). Their hours are the household's typical hours, with no weather change. Lighting and laundry are adjusted by the rainfall multipliers above.",
+    "fraction": 1.0
+  },
+  "duty_cycle": {
+    "_about": "Share of an appliance's operating hours that it actually draws full rated power. Cycling appliances (AC compressor, fridge compressor, heater thermostat) do not run at full power for every operating hour. Energy = rated kW x quantity x duty x operating hours.",
+    "default": 1.0,
+    "ac": 0.85,
+    "cooler": 0.9,
+    "fan": 1.0,
+    "fridge": 0.7,
+    "heater": 0.8,
+    "geyser": 1.0,
+    "lighting": 1.0,
+    "laundry": 1.0,
+    "baseline": 1.0
+  }
+}

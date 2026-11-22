@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Smart Appliance Advisor · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1>Smart Appliance Usage Advisor</h1><p>Recommended hours for tomorrow, calculated from your budget, appliances and the forecast.</p></div>
+</div>
+<div id="advisor"><div class="loading-block"><span class="spinner"></span>Calculating your plan…</div></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/recommendations.js') }}"></script>
+{% endblock %}

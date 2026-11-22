@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Budget Planner · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Smart Budget Planner</h1><p>Your remaining units, spread across the remaining days using the live weather forecast. Recommended hours are calculated automatically; no usage hours to enter.</p></div></div>
+<div id="planner"><div class="loading-block"><span class="spinner"></span>Building your plan…</div></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/planner.js') }}"></script>
+{% endblock %}

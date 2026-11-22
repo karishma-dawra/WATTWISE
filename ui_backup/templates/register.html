@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Register · WATTWISE{% endblock %}
+{% block mainclass %}container auth-page{% endblock %}
+{% block content %}
+<div class="auth-card card glass wide">
+  <h1 class="auth-title" data-i18n="auth.register.title">Create your WATTWISE account</h1>
+  <p class="text2 small" data-i18n="auth.register.sub">Each account keeps its own meter details, household and appliances.</p>
+  <form id="regForm" class="form-grid" novalidate>
+    <div><label data-i18n="auth.fullname">Full name</label><input id="r_name" maxlength="80" autocomplete="name"><div class="field-err" data-for="full_name"></div></div>
+    <div><label data-i18n="auth.mobile">Mobile number</label><input id="r_mobile" inputmode="numeric" autocomplete="tel"><div class="field-err" data-for="mobile"></div></div>
+    <div><label data-i18n="auth.password">Password</label><input id="r_password" type="password" autocomplete="new-password"><div class="field-err" data-for="password"></div>
+      <div class="hint">6 characters or more.</div></div>
+    <div><label data-i18n="auth.email">Email (optional)</label><input id="r_email" type="email" autocomplete="email"><div class="field-err" data-for="email"></div></div>
+    <div><label data-i18n="auth.city">City</label><input id="r_city" maxlength="80" autocomplete="address-level2"><div class="field-err" data-for="city"></div></div>
+    <div><label data-i18n="auth.language">Preferred language</label>
+      <select id="r_language"><option value="en">English</option><option value="hi">हिंदी (Hindi)</option></select></div>
+    <div class="full error-box" id="r_error" hidden></div>
+    <div class="full"><button class="btn btn-primary btn-lg" type="submit" id="r_submit" data-i18n="auth.register.btn">Create account</button></div>
+  </form>
+  <div class="auth-links"><a href="/login" data-i18n="auth.haveaccount">Already registered? Log in</a></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $ } = WW;
+  $('#r_language').value = WW.lang();
+  $('#regForm').onsubmit = async ev => {
+    ev.preventDefault();
+    WW.$$('#regForm .field-err').forEach(x => x.textContent = '');
+    $('#r_error').hidden = true;
+    const body = { full_name: $('#r_name').value, mobile: $('#r_mobile').value, password: $('#r_password').value,
+                   email: $('#r_email').value, city: $('#r_city').value, language: $('#r_language').value };
+    try {
+      await WW.busy($('#r_submit'), () => WW.api('/api/auth/register', { method: 'POST', body }));
+      WW.setLanguage(body.language);
+      location.href = '/profile';  // first stop: complete meter and household details
+    } catch (e) {
+      const msg = e.message, field = /name/i.test(msg) ? 'full_name' : /mobile|already registered/i.test(msg) ? 'mobile'
+        : /password/i.test(msg) ? 'password' : /email/i.test(msg) ? 'email' : /city/i.test(msg) ? 'city' : null;
+      const fe = field && WW.$(`#regForm .field-err[data-for="${field}"]`);
+      if (fe) fe.textContent = msg; else { $('#r_error').textContent = msg; $('#r_error').hidden = false; }
+    }
+  };
+})();
+</script>
+{% endblock %}

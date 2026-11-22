@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Appliances · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Appliance Management</h1><p>Daily kWh = (Wattage × Quantity × Hours) ÷ 1000. Edit anything and every prediction updates.</p></div>
+  <button class="btn btn-primary" id="addBtn">+ Add appliance</button></div>
+<div id="stats" class="grid g4 keep2" style="margin-bottom:16px"></div>
+<div class="grid" style="grid-template-columns:1fr">
+  <div class="card"><h3>Your appliances <span class="sub" id="cnt"></span></h3><div id="list"><div class="loading-block"><span class="spinner"></span></div></div></div>
+  <div class="card"><h3>Consumption share</h3><div class="chart-box sm"><canvas id="cShare"></canvas></div><div class="legend" id="shareLegend"></div></div>
+</div>
+
+<div class="modal-bg" id="modalBg"><form class="modal" id="appForm" novalidate>
+  <h2 id="modalTitle">Add appliance</h2>
+  <div class="form-grid">
+    <div class="full"><label>Quick preset</label><select id="fPreset"></select></div>
+    <div><label>Name *</label><input id="fName" maxlength="60" required><div class="field-err" data-for="name"></div></div>
+    <div><label>Category</label><select id="fCategory"></select></div>
+    <div><label>Quantity *</label><input id="fQty" type="number" min="1" step="1" value="1"><div class="field-err" data-for="quantity"></div></div>
+    <div><label>Wattage per unit (W) *</label><input id="fWatt" type="number" min="0.1" step="any"><div class="field-err" data-for="wattage"></div></div>
+    <div class="full"><label data-i18n="appl.usage">Usage hours per day (optional)</label>
+      <input id="fUsage" type="number" min="0.25" max="24" step="0.25" placeholder="e.g. 6">
+      <div class="hint" data-i18n="appl.usage_help">If you enter hours, WattWise will run this appliance for at least this many hours every day in its recommendations. Leave it blank and WattWise uses a labelled estimate for this appliance type.</div>
+      <div class="field-err" data-for="usage_hours"></div></div>
+    <div><label>Priority</label><select id="fPriority"><option value="essential">Essential (never reduced)</option><option value="flexible">Flexible (advisor can adjust)</option></select></div>
+    <div class="full"><label>Weather sensitivity</label><select id="fWeather"><option value="none">None</option><option value="cooling">Cooling – use rises with heat</option><option value="heating">Heating – use rises with cold</option></select></div>
+    <div class="full notice small" id="fPreview">Daily: – kWh · Monthly: – kWh</div>
+  </div>
+  <div class="row" style="justify-content:flex-end;margin-top:18px"><button type="button" class="btn" id="cancelBtn">Cancel</button><button class="btn btn-primary" type="submit" id="saveBtn">Save</button></div>
+</form></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/appliances.js') }}"></script>
+{% endblock %}

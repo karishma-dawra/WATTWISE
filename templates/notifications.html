@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Personal Notifications · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Personal Notifications</h1><p>Budget, overuse and consumption alerts, kept here until you read or delete them.</p></div>
+  <div class="row">
+    <div class="pill-tabs" id="filters" role="tablist" aria-label="Filter notifications">
+      <button class="pill active" data-f="all" role="tab" aria-selected="true">All</button>
+      <button class="pill" data-f="unread" role="tab" aria-selected="false">Unread</button>
+      <button class="pill" data-f="critical" role="tab" aria-selected="false">Critical</button>
+      <button class="pill" data-f="warning" role="tab" aria-selected="false">Warning</button>
+    </div>
+    <button class="btn" id="readAllBtn" disabled>Mark all as read</button>
+  </div></div>
+<div id="notifs" aria-live="polite"><div class="loading-block"><span class="spinner"></span>Loading notifications…</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $, $$, api, esc } = WW;
+  const QUERY = { all: '', unread: '?unread=true', critical: '?severity=critical', warning: '?severity=warning' };
+  const ICON = { critical: '🔴', warning: '🟠', info: '🔵' };
+  const KIND = { budget_warning: 'Budget', overuse: 'Overuse', high_consumption: 'High consumption', appliance_fault: 'Appliance fault', info: 'Info' };
+  let filter = 'all', items = [], unread = 0, lastSig = null;
+
+  function ago(iso) {
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    const u = [[86400, 'day'], [3600, 'hour'], [60, 'minute']];
+    for (const [sec, name] of u) if (s >= sec) { const v = Math.floor(s / sec); return `${v} ${name}${v === 1 ? '' : 's'} ago`; }
+    return 'just now';
+  }
+
+  function card(x) {
+    const sevBadge = x.severity === 'critical' ? 'b-exceeded' : x.severity === 'warning' ? 'b-moderate' : 'b-info';
+    const when = new Date(x.created_at);
+    return `<div class="alert notif ${x.severity} ${x.is_read ? 'read' : 'unread'}" data-id="${x.id}">
+      <span class="ico" aria-hidden="true">${ICON[x.severity] || '🔵'}</span>
+      <div>
+        <div class="t">${x.is_read ? '' : '<span class="new-dot" title="Unread"></span>'}${esc(x.title)}
+          <span class="badge ${sevBadge}" style="margin-left:6px">${esc(x.severity)}</span></div>
+        <div class="m">${esc(x.message)}</div>
+        <div class="meta"><span class="kind">${esc(KIND[x.type] || x.type)}</span>
+          <time datetime="${esc(x.created_at)}" title="${esc(when.toLocaleString('en-IN'))}">${ago(x.created_at)}</time></div>
+      </div>
+      <div class="acts">
+        ${x.is_read ? '' : `<button class="btn btn-sm" data-read="${x.id}" aria-label="Mark “${esc(x.title)}” as read">Mark read</button>`}
+        <button class="btn btn-sm btn-danger" data-del="${x.id}" aria-label="Delete “${esc(x.title)}”">Delete</button>
+      </div></div>`;
+  }
+
+  function draw() {
+    $('#readAllBtn').disabled = unread === 0;
+    if (!items.length) {
+      const what = { all: '', unread: 'unread ', critical: 'critical ', warning: 'warning ' }[filter];
+      $('#notifs').innerHTML = `<div class="card empty"><b>${filter === 'all' || filter === 'unread' ? "No alerts, you're on track!" : `No ${what}alerts`}</b>${filter === 'all' ? 'New budget and usage alerts will show up here.' : 'Nothing matches this filter right now.'}</div>`;
+      return;
+    }
+    $('#notifs').innerHTML = `<div class="card">${items.map(card).join('')}</div>`;
+  }
+
+  async function load(silent) {
+    if (!silent) WW.loading($('#notifs'), 'Loading notifications…');
+    try {
+      const r = await api('/api/notifications' + QUERY[filter]);
+      items = r.notifications; unread = r.unread_count; draw();
+    } catch (e) { if (!silent) WW.errorBox($('#notifs'), e.message, () => load()); }
+  }
+
+  $('#filters').onclick = e => {
+    const b = e.target.closest('[data-f]'); if (!b) return;
+    filter = b.dataset.f;
+    $$('#filters .pill').forEach(p => { const on = p === b; p.classList.toggle('active', on); p.setAttribute('aria-selected', on); });
+    load();
+  };
+  $('#notifs').onclick = async e => {
+    const rd = e.target.closest('[data-read]'), del = e.target.closest('[data-del]');
+    if (!rd && !del) return;
+    try {
+      if (rd) await api(`/api/notifications/${rd.dataset.read}/read`, { method: 'PATCH' });
+      else await api(`/api/notifications/${del.dataset.del}`, { method: 'DELETE' });
+      await load(true); WW.refreshNotifications();
+    } catch (er) { WW.toast(er.message, 'err'); }
+  };
+  $('#readAllBtn').onclick = e => WW.busy(e.currentTarget, async () => {
+    try { await api('/api/notifications/read-all', { method: 'PATCH' }); await load(true); WW.refreshNotifications(); }
+    catch (er) { WW.toast(er.message, 'err'); }
+  });
+  // live updates: common.js polls every 30 s and announces the result; reload the list when something new arrived
+  document.addEventListener('ww:notifications', e => {
+    const sig = e.detail.unread_count + ':' + e.detail.notifications.reduce((m, x) => Math.max(m, x.id), 0);
+    if (lastSig !== null && sig !== lastSig) load(true);
+    lastSig = sig;
+  });
+  setInterval(() => { if (items.length) draw(); }, 60000);  // keep "2 minutes ago" fresh
+  load();
+})();
+</script>
+{% endblock %}

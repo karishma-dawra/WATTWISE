@@ -1,0 +1,53 @@
+﻿{% extends "base.html" %}
+{% block title %}Weather Intelligence · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Weather Intelligence</h1><p>Live forecast from Open-Meteo and what it means for your electricity use.</p></div>
+  <button class="btn" id="refreshBtn">↻ Refresh</button></div>
+<div id="wx"><div class="loading-block"><span class="spinner"></span>Fetching forecast…</div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $, api, esc, n, wxIcon, dayName } = WW;
+  let chart = null;
+  async function load(refresh) {
+    const el = $('#wx');
+    if (!chart) WW.loading(el, 'Fetching forecast…');
+    try {
+      const w = await api('/api/weather' + WW.q(refresh ? 'refresh=1' : ''));
+      chart = null;
+      if (!w.available) { el.innerHTML = `<div class="card empty"><b>Weather unavailable</b>${esc(w.reason)}<br><a class="btn btn-primary" href="/setup" style="margin-top:12px">Set your location</a></div>`; return; }
+      const f = w.forecast, hot = f.filter(d => d.hot), cold = f.filter(d => d.cold);
+      el.innerHTML = `
+      ${w.stale_warning ? `<div class="notice warn" style="margin-bottom:16px">⚠ ${esc(w.stale_warning)}</div>` : ''}
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card kpi"><div class="label">Current · ${esc(w.location || '')}</div><div class="value mono">${w.current ? n(w.current.temp, 0) : '–'}°C</div><div class="foot">${w.current ? esc(w.current.condition) : ''}</div></div>
+        <div class="card kpi"><div class="label">Hot days</div><div class="value mono" style="color:${hot.length ? '#fb923c' : ''}">${hot.length}</div><div class="foot">${hot.length ? hot.map(d => dayName(d.day)).join(', ') : 'None in the next 7 days'}</div></div>
+        <div class="card kpi"><div class="label">Cold days</div><div class="value mono" style="color:${cold.length ? '#38bdf8' : ''}">${cold.length}</div><div class="foot">${cold.length ? cold.map(d => dayName(d.day)).join(', ') : 'None in the next 7 days'}</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><h3>7-day forecast <span class="sub">Open-Meteo · updated ${esc((w.fetched_at || '').replace('T', ' '))}</span></h3>
+        <div class="fc-strip">${f.map(d => `<div class="fc-day ${d.hot ? 'hot' : d.cold ? 'cold' : ''}"><div class="d">${dayName(d.day)}</div><div class="ic">${wxIcon(d.code)}</div><div class="hi mono">${n(d.temp_max, 0)}°</div><div class="lo mono">${n(d.temp_min, 0)}°</div><div class="c">${esc(d.condition)}</div>${d.humidity != null || d.rain_chance != null ? `<div class="xs muted">${d.humidity != null ? '💧' + n(d.humidity, 0) + '%' : ''} ${d.rain_chance != null ? '☔' + n(d.rain_chance, 0) + '%' : ''}</div>` : ''}
+          ${d.modelled_kwh != null ? `<div class="xs muted" style="margin-top:6px">${n(d.modelled_kwh, 1)} kWh</div>` : ''}</div>`).join('')}</div></div>
+      <div class="grid g-main">
+        <div class="card"><h3>Temperature trend</h3><div class="chart-box sm"><canvas id="cTemp"></canvas></div>
+          <div class="legend"><span><i style="background:#f97316"></i>Daily high</span><span><i style="background:#38bdf8"></i>Daily low</span></div></div>
+        <div class="card"><h3>Weather impact analysis</h3><ul class="why" style="list-style:disc;margin-top:-6px">${(w.impact || []).map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+          <details style="margin-top:14px"><summary>About this forecast</summary><div class="small text2">Forecast from Open-Meteo. Days beyond the 16-day forecast use climate averages from earlier years.</div></details></div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3>Modelled household demand by day <span class="sub">kWh · estimate</span></h3><div class="chart-box sm"><canvas id="cDemand"></canvas></div></div>`;
+      const lab = f.map(d => dayName(d.day));
+      chart = new Chart($('#cTemp'), { type: 'line', data: { labels: lab, datasets: [
+        { label: 'High', data: f.map(d => d.temp_max), borderColor: '#f97316', backgroundColor: 'rgba(249,115,22,.12)', fill: '+1', borderWidth: 2.5, tension: .3, pointRadius: 4 },
+        { label: 'Low', data: f.map(d => d.temp_min), borderColor: '#38bdf8', borderWidth: 2.5, tension: .3, pointRadius: 4 }] },
+        options: { interaction: { mode: 'index', intersect: false }, scales: { x: { grid: { display: false } }, y: { grid: { color: 'rgba(148,170,210,.08)' }, title: { display: true, text: '°C' } } },
+          plugins: { tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${n(c.raw, 0)}°C` } } } } });
+      new Chart($('#cDemand'), { type: 'bar', data: { labels: lab, datasets: [{ label: 'Modelled kWh', data: f.map(d => d.modelled_kwh), backgroundColor: '#3b82f6', borderRadius: 4, borderSkipped: 'bottom', maxBarThickness: 40 }] },
+        options: { scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: 'rgba(148,170,210,.08)' } } }, plugins: { tooltip: { callbacks: { label: c => ` ${n(c.raw, 2)} kWh (estimate)` } } } } });
+      if (refresh) WW.toast('Forecast refreshed', 'ok');
+    } catch (e) { WW.errorBox(el, e.message, () => load()); }
+  }
+  $('#refreshBtn').onclick = e => WW.busy(e.currentTarget, () => load(true));
+  load();
+})();
+</script>
+{% endblock %}

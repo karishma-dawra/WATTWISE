@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WattWise – Smart Electricity Planner</title>
+<link rel="stylesheet" href="/static/style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+<header>
+  <div><h1>⚡ WattWise</h1><p>Weather-aware electricity budgeting for your home</p></div>
+  <div class="hdr-actions">
+    <button id="demoBtn" class="ghost">Load demo home</button>
+    <button id="resetBtn" class="ghost">Reset</button>
+  </div>
+</header>
+
+<main>
+  <section id="alerts"></section>
+
+  <section class="kpis">
+    <div class="card kpi"><span>Monthly budget</span><b id="kBudget">–</b><small>units</small></div>
+    <div class="card kpi"><span>Remaining</span><b id="kRemaining">–</b><small id="kDays"></small></div>
+    <div class="card kpi"><span>Today's limit</span><b id="kLimit">–</b><small>units/day</small></div>
+    <div class="card kpi"><span>Predicted bill</span><b id="kBill">–</b><small id="kPred"></small></div>
+  </section>
+
+  <section class="card">
+    <h2>Budget used</h2>
+    <div class="bar"><div id="barFill"></div></div>
+    <p id="barText" class="muted"></p>
+  </section>
+
+  <section class="grid2">
+    <div class="card">
+      <h2>🏠 Household setup</h2>
+      <form id="setupForm" class="row">
+        <label>Monthly budget (units)<input id="budget" type="number" min="1" step="1" required></label>
+        <label>City (for weather)<input id="city" type="text" required></label>
+        <button>Save</button>
+      </form>
+      <h3>Log electricity used</h3>
+      <form id="usageForm" class="row">
+        <label>Date<input id="uDay" type="date"></label>
+        <label>Units (kWh)<input id="uUnits" type="number" min="0" step="0.1" required></label>
+        <button>Log</button>
+      </form>
+      <p class="muted">Enter your meter readings daily to keep predictions accurate.</p>
+    </div>
+    <div class="card">
+      <h2>🔌 Add appliance</h2>
+      <form id="appForm" class="row">
+        <label>Name<input id="aName" required placeholder="e.g. Bedroom AC"></label>
+        <label>Type<select id="aCat"></select></label>
+        <label>Watts<input id="aWatts" type="number" min="1" required></label>
+        <label>Qty<input id="aQty" type="number" min="1" value="1" required></label>
+        <label>Hours/day<input id="aHours" type="number" min="0" max="24" step="0.5" value="4" required></label>
+        <button>Add</button>
+      </form>
+      <p class="muted">Hours/day = how long you use it on a typical <i>comfortable</i> day (AC/cooler: hot day; heater/geyser: cold day). WattWise scales it with the forecast.</p>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Appliances</h2>
+    <table id="appTable"><thead><tr><th>Name</th><th>Type</th><th>Watts × Qty</th><th>Hours/day</th><th>Units/day</th><th></th></tr></thead><tbody></tbody></table>
+    <p id="topApp" class="muted"></p>
+  </section>
+
+  <section class="card">
+    <h2>⏱️ Smart appliance advisor</h2>
+    <div id="advice"></div>
+  </section>
+
+  <section class="card">
+    <h2>🌤️ Weather forecast &amp; daily limits</h2>
+    <p id="wsrc" class="muted"></p>
+    <div class="scroll"><table id="planTable"><thead><tr><th>Date</th><th>Max / Min °C</th><th>Day</th><th>Comfort demand</th><th>Budget limit</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <section class="grid2">
+    <div class="card"><h2>📊 Monthly consumption</h2><div class="chart"><canvas id="cMonth"></canvas></div></div>
+    <div class="card"><h2>📊 Daily consumption</h2><div class="chart"><canvas id="cDaily"></canvas></div></div>
+  </section>
+  <section class="card"><h2>📊 Appliance-wise consumption (units/month)</h2><div class="chart small"><canvas id="cApp"></canvas></div></section>
+</main>
+<script src="/static/app.js"></script>
+</body>
+</html>

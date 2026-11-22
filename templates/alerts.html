@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Smart Alerts · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Smart Alerts</h1><p>Generated from your real consumption, budget maths and the weather forecast.</p></div>
+  <div class="row"><div class="pill-tabs" id="filters"><button class="pill active" data-f="all">All</button><button class="pill" data-f="critical">Critical</button><button class="pill" data-f="warning">Warning</button><button class="pill" data-f="info">Info</button></div>
+  <button class="btn" id="refreshBtn">↻ Re-check</button></div></div>
+<div id="alerts"><div class="loading-block"><span class="spinner"></span></div></div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $, api, alertHTML } = WW;
+  let data = [], filter = 'all';
+  function draw() {
+    const l = data.filter(a => filter === 'all' || a.severity === filter);
+    $('#alerts').innerHTML = l.length ? `<div class="card">${l.map(a => alertHTML(a)).join('')}</div>` : `<div class="card empty"><b>No ${filter === 'all' ? '' : filter + ' '}alerts</b>You're all clear.</div>`;
+  }
+  async function load() {
+    try { data = await api('/api/alerts/refresh', { method: 'POST' }); draw(); } catch (e) { WW.errorBox($('#alerts'), e.message, load); }
+  }
+  $('#filters').onclick = e => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; WW.$$('#filters .pill').forEach(p => p.classList.toggle('active', p === b)); draw(); };
+  $('#alerts').onclick = async e => {
+    const b = e.target.closest('[data-dismiss]'); if (!b) return;
+    try { await api(`/api/alerts/${b.dataset.dismiss}/dismiss`, { method: 'POST' }); data = data.filter(a => a.id != b.dataset.dismiss); draw(); } catch (er) { WW.toast(er.message, 'err'); }
+  };
+  $('#refreshBtn').onclick = e => WW.busy(e.currentTarget, load);
+  load();
+})();
+</script>
+{% endblock %}

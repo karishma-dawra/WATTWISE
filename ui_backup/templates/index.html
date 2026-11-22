@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block mainclass %}{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:0">
+  <section class="hero">
+    <span class="badge b-info tag">⚡ Weather-aware energy budgeting</span>
+    <h1>Take Control of Your <span class="grad-text">Electricity Budget.</span></h1>
+    <p class="lead">WATTWISE blends your appliances, tomorrow's weather forecast and your monthly unit budget to tell you exactly how long you can run your AC, geyser and more — without a bill shock.</p>
+    <div class="row" style="justify-content:center">
+      <a class="btn btn-primary btn-lg" href="/dashboard">Start Managing Energy →</a>
+      <a class="btn btn-lg" href="/advisor">See the Smart Advisor</a>
+    </div>
+    <div class="card glass hero-demo" id="liveTeaser">
+      <div class="eyebrow">Live from your household · calculated, not scripted</div>
+      <div id="teaserBody" class="text2" style="margin-top:10px"><span class="spinner"></span> Calculating tomorrow's plan…</div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>One platform. Four signals.</h2>
+    <p class="sub">The USP: <b>Weather + Appliances + Electricity Budget + Smart Prediction</b> in a single, explainable plan.</p>
+    <div class="grid g4">
+      <div class="card feat"><div class="ic">🌤️</div><h4>Live weather</h4><p>7-day forecast from Open-Meteo for your city, translated into expected cooling and heating demand.</p></div>
+      <div class="card feat"><div class="ic">🔌</div><h4>Appliance model</h4><p>Wattage × quantity × hours gives true kWh per appliance, with highest and lowest consumers ranked.</p></div>
+      <div class="card feat"><div class="ic">🎯</div><h4>Budget tracking</h4><p>Remaining units, remaining days and a weather-weighted daily limit for the rest of your billing cycle.</p></div>
+      <div class="card feat"><div class="ic">🧠</div><h4>Smart advisor</h4><p>Recommended hours for AC, geyser, cooler and heater with the reasoning shown for every number.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>How WATTWISE works</h2>
+    <p class="sub">From setup to a daily plan in about two minutes.</p>
+    <div class="grid g4">
+      <div class="card step"><div class="n">1</div><h4>Set up your home</h4><p class="small text2">Monthly unit budget, billing cycle, city and units used so far.</p></div>
+      <div class="card step"><div class="n">2</div><h4>Add appliances</h4><p class="small text2">Pick presets or custom devices with wattage and daily hours.</p></div>
+      <div class="card step"><div class="n">3</div><h4>We forecast</h4><p class="small text2">Projected month-end usage, bill estimate and risk of exceeding budget.</p></div>
+      <div class="card step"><div class="n">4</div><h4>Follow the plan</h4><p class="small text2">Get hours per appliance, alerts and a day-by-day budget planner.</p></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="grid g-main2" style="align-items:center">
+      <div>
+        <span class="eyebrow">Weather-aware energy management</span>
+        <h2 style="text-align:left;margin:10px 0 14px">A 42°C day shouldn't wreck your month.</h2>
+        <p class="text2">When a heatwave is forecast, cooling demand rises; on cold days heaters and geysers work harder. WATTWISE applies configurable, clearly stated assumptions to scale expected usage, then re-balances the units you have left across the remaining days.</p>
+        <p class="text2" style="margin-top:12px">Essentials such as the fridge and lights are reserved first. Comfort appliances get a protected minimum. The rest is shared by wattage and need — and we never claim exact demand from temperature alone.</p>
+      </div>
+      <div class="card">
+        <h3>What goes into every recommendation</h3>
+        <ul class="why" style="list-style:disc"><li>Remaining monthly units and remaining billing days</li><li>Appliance wattage, quantity and usual daily hours</li><li>Essential load reserved before anything else</li><li>Tomorrow's forecast and the rest of the week</li></ul>
+        <a class="btn btn-primary" style="margin-top:18px" href="/dashboard">Open the dashboard</a>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(async () => {
+  const el = WW.$('#teaserBody');
+  try {
+    const a = await WW.api('/api/recommendations');
+    if (!a.ready) { el.innerHTML = WW.esc(a.message) + ' <a href="/setup">Set up your household →</a>'; return; }
+    const top = a.plan.filter(p => p.priority === 'flexible').slice(0, 3);
+    el.innerHTML = `<p style="font-size:1.05rem;color:var(--text)">${WW.esc(a.headline)}</p>
+      <div class="row" style="margin-top:14px">${top.map(p => `<span class="badge b-info">${WW.esc(p.name)}: ${WW.esc(p.duration)}</span>`).join('')}
+      <span class="badge b-safe">≈ ${WW.n(a.estimated_units)} units tomorrow</span></div>`;
+  } catch (e) { el.innerHTML = 'Open the <a href="/dashboard">dashboard</a> to see your live plan.'; }
+})();
+</script>
+{% endblock %}

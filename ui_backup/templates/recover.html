@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}Recover password · WATTWISE{% endblock %}
+{% block mainclass %}container auth-page{% endblock %}
+{% block content %}
+<div class="auth-card card glass">
+  <h1 class="auth-title" data-i18n="auth.recover.title">Recover your password</h1>
+  <p class="text2 small" data-i18n="auth.recover.sub">For this local demo, confirm your mobile number and the city you registered with.</p>
+  <form id="recForm" class="stack" novalidate>
+    <div><label data-i18n="auth.mobile">Mobile number</label><input id="c_mobile" inputmode="numeric"></div>
+    <div><label data-i18n="auth.city">City</label><input id="c_city"></div>
+    <div><label data-i18n="auth.newpassword">New password</label><input id="c_pw" type="password" autocomplete="new-password"><div class="hint">6 characters or more.</div></div>
+    <div class="error-box" id="c_error" hidden></div>
+    <div class="notice ok" id="c_done" hidden data-i18n="auth.recover.done">Password updated. You can log in now.</div>
+    <button class="btn btn-primary btn-lg" type="submit" id="c_submit" data-i18n="auth.recover.btn">Set new password</button>
+  </form>
+  <div class="auth-links"><a href="/login" data-i18n="auth.login.btn">Log in</a></div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $ } = WW;
+  $('#recForm').onsubmit = async ev => {
+    ev.preventDefault();
+    $('#c_error').hidden = true; $('#c_done').hidden = true;
+    try {
+      await WW.busy($('#c_submit'), () => WW.api('/api/auth/recover', { method: 'POST',
+        body: { mobile: $('#c_mobile').value, city: $('#c_city').value, new_password: $('#c_pw').value } }));
+      $('#c_done').hidden = false;
+    } catch (e) { $('#c_error').textContent = e.message; $('#c_error').hidden = false; }
+  };
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="{{ lang or 'en' }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}WATTWISE – Smart Electricity Budget{% endblock %}</title>
+<meta name="description" content="WATTWISE combines weather, appliances and your monthly budget to tell you how to use electricity smartly.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2338bdf8'/%3E%3Cpath d='M18 5 9 18h6l-1 9 9-13h-6z' fill='%23041221'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">⚡</span>WATTWISE</a>
+    {% if account %}
+    <button class="nav-toggle" id="navToggle" aria-label="Menu">☰</button>
+    <nav class="nav-links" id="navLinks">
+      {% set links = [('dashboard','nav.dashboard','Dashboard'),('appliances','nav.appliances','Appliances'),('advisor','nav.predictions','Predictions'),('planner','nav.usage','Electricity Usage'),('weather','nav.weather','Weather'),('alerts','nav.alerts','Alerts'),('profile','nav.profile','Profile'),('setup','nav.settings','Settings')] %}
+      {% for slug, key, label in links %}
+      <a href="/{{ slug }}" class="{{ 'active' if page == slug else '' }}" data-i18n="{{ key }}">{{ label }}{% if slug == 'alerts' %}<span class="alert-dot" id="navAlertDot" hidden></span>{% endif %}</a>
+      {% endfor %}
+    </nav>
+    {% endif %}
+    <div class="nav-right">
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang-set="en" class="{{ 'on' if lang != 'hi' else '' }}">EN</button>
+        <button type="button" data-lang-set="hi" class="{{ 'on' if lang == 'hi' else '' }}">हिंदी</button>
+      </div>
+      {% if account %}
+      <div class="acct">
+        <span class="acct-name" title="{{ account.mobile }}">{{ account.full_name.split(' ')[0] }}</span>
+        <button type="button" class="btn btn-sm btn-ghost" id="logoutBtn" data-i18n="nav.logout">Logout</button>
+      </div>
+      {% else %}
+      <a class="btn btn-sm" href="/login" data-i18n="nav.login">Login</a>
+      <a class="btn btn-sm btn-primary" href="/register" data-i18n="nav.register">Register</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+<div id="demoBanner"></div>
+<main class="{% block mainclass %}container{% endblock %}">
+{% block content %}{% endblock %}
+</main>
+<div class="toasts" id="toasts"></div>
+<footer class="footer">WATTWISE · Weather + Appliances + Budget + Smart Prediction · Bill figures are estimates, not an official tariff calculation.</footer>
+<script>window.WW_CUR = {{ currency|tojson }}; window.WW_LANG = {{ (lang or 'en')|tojson }}; window.WW_LOGGED_IN = {{ (account is not none)|tojson }};</script>
+<script src="{{ url_for('static', filename='js/vendor/chart.umd.js') }}"></script>
+<script src="{{ url_for('static', filename='js/common.js') }}"></script>
+<script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

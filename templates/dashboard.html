@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div><h1 data-i18n="dash.title">Energy Dashboard</h1><p id="subtitle">Loading your household…</p><p id="statusLine" class="status-line"></p></div>
+  <div class="row"><button class="btn" id="refreshBtn" data-i18n="dash.refresh">↻ Refresh weather</button><a class="btn btn-primary" href="/advisor" data-i18n="dash.open_advisor">Open Smart Advisor</a></div>
+</div>
+<div id="dash"><div class="loading-block"><span class="spinner"></span>Crunching your numbers…</div></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

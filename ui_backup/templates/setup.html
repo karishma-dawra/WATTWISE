@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+{% block title %}Household Setup · WATTWISE{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Household Setup</h1><p>Tell WATTWISE about your budget, billing cycle, location and tariff.</p></div></div>
+<div class="card" id="meterCard" style="margin-bottom:16px">
+  <h3>Your Electricity & Meter Details <span class="sub">drives units consumed, remaining budget and predictions</span></h3>
+  <div class="form-grid">
+    <div><label>Previous Bill Meter Reading (kWh)</label><input id="m_prev" type="number" min="0" step="any">
+      <div class="hint">Meter reading at the start of your current billing cycle.</div><div class="field-err" data-for="prev"></div></div>
+    <div><label>Today's Meter Reading (kWh)</label><input id="m_today" type="number" min="0" step="any">
+      <div class="hint">Your latest meter reading.</div><div class="field-err" data-for="today"></div></div>
+    <div class="full"><label>Monthly Electricity Budget (Units)</label><input id="m_budget" type="number" min="0.01" step="any">
+      <div class="hint">The maximum units you want to use in this billing cycle.</div><div class="field-err" data-for="budget"></div></div>
+    <div class="full"><label style="display:flex;gap:8px;align-items:center;cursor:pointer;font-weight:500;color:var(--text)"><input type="checkbox" id="m_reset" style="width:auto"> My meter was reset or rolled over</label></div>
+    <div class="full" id="m_resetRow" hidden><label>Reading just before the reset (kWh)</label><input id="m_before" type="number" min="0" step="any">
+      <div class="hint">Units used before the reset are kept in your total.</div></div>
+  </div>
+  <div class="grid g3" style="margin-top:16px">
+    <div class="tile"><div class="l">Units consumed</div><div class="v mono" id="c_used">–</div></div>
+    <div class="tile"><div class="l">Remaining units</div><div class="v mono" id="c_rem">–</div></div>
+    <div class="tile"><div class="l">Budget utilisation</div><div class="v mono" id="c_util">–</div></div>
+  </div>
+  <div id="m_warn" style="margin-top:12px"></div>
+  <div class="row" style="margin-top:14px"><button class="btn btn-primary" id="m_save">Save meter details</button>
+    <span class="xs muted">Units consumed = Today's reading − Previous bill reading</span></div>
+</div>
+<div class="grid g-main">
+  <form class="card" id="hhForm" novalidate>
+    <h3>Household & billing cycle</h3>
+    <div class="form-grid">
+      <div class="full"><label>Household name</label><input id="name" maxlength="80"></div>
+      <div><label>Billing cycle start *</label><input id="cycle_start" type="date"><div class="field-err" data-for="cycle_start"></div></div>
+      <div><label>Billing cycle end *</label><input id="cycle_end" type="date"><div class="field-err" data-for="cycle_end"></div></div>
+
+    </div>
+    <h3 style="margin-top:26px">Location</h3>
+    <div class="form-grid">
+      <div class="full"><div class="row between" style="margin-bottom:8px"><span class="small text2">Let WattWise find you automatically, or search below.</span>
+        <button type="button" class="btn btn-primary btn-sm" id="detectBtn">📍 Detect my location</button></div>
+        <label>City</label><div class="row" style="flex-wrap:nowrap"><input id="citySearch" placeholder="e.g. Ludhiana" autocomplete="off"><button type="button" class="btn" id="searchBtn">Find</button></div>
+        <div id="geoResults" class="stack" style="margin-top:8px"></div>
+        <div class="hint" id="locCurrent"></div></div>
+    </div>
+    <h3 style="margin-top:26px">Region, currency & tariff <span class="sub" id="tariffSource"></span></h3>
+    <div class="notice small" id="regionCard" style="margin-bottom:12px">Set your location to see your region's pricing profile.</div>
+    <div class="row" style="margin-bottom:12px"><button type="button" class="btn btn-sm" id="applyRegion">Apply regional pricing</button><span class="xs muted">Profiles are indicative — always verify with your electricity bill.</span></div>
+    <div class="form-grid">
+      <div><label>Currency symbol</label><input id="currency_symbol" maxlength="6"></div>
+      <div><label>Flat tariff per unit</label><input id="tariff" type="number" min="0" step="0.01"><div class="field-err" data-for="tariff"></div></div>
+      <div class="full"><label>Slab tariff (optional)</label><input id="tariff_slabs_text" placeholder="100:4.49, 300:6.34, rest:7.30"><div class="hint">Up-to-units:rate pairs; the last must be rest:rate. When set, slabs replace the flat tariff.</div><div class="field-err" data-for="tariff_slabs"></div></div>
+      <div><label>Fixed monthly charges</label><input id="fixed_charges" type="number" min="0" step="1"></div>
+      <div><label>Electricity duty / tax (%)</label><input id="duty_percent" type="number" min="0" max="100" step="0.1"><div class="hint">Applied to energy + fixed charges.</div></div>
+      <div><label>Free units per month (subsidy)</label><input id="free_units" type="number" min="0" step="1"><div class="hint">Simple deduction; eligibility rules are not modelled.</div></div>
+      <div><label>Other charges</label><input id="other_charges" type="number" min="0" step="1"></div>
+    </div>
+
+    <div class="row" style="margin-top:22px"><button class="btn btn-primary" type="submit" id="saveBtn">Save household</button><a class="btn" href="/dashboard">Go to dashboard →</a></div>
+  </form>
+
+  <div class="stack">
+    <div class="card"><h3>Appliances <a class="small" href="/appliances">Manage all →</a></h3>
+      <div class="small text2" id="appList" style="margin-bottom:12px"></div>
+      <label>Quick-add a preset (edit details later)</label><div class="row" style="gap:6px" id="presetChips"></div></div>
+    <div class="card"><h3>Log a consumption reading</h3>
+      <form id="rdForm" class="stack" novalidate>
+        <div><label>Date</label><input id="rdDate" type="date"></div>
+        <div><label>Total units used this cycle</label><input id="rdUnits" type="number" min="0" step="any"></div>
+        <div><label>…or meter reading</label><input id="rdMeter" type="number" min="0" step="any"></div>
+        <button class="btn" type="submit">Add reading</button>
+      </form>
+      <div id="rdList" style="margin-top:14px"></div>
+      <div class="hint">Readings are the only source of your consumption history. Daily values are derived by spreading units evenly between readings.</div></div>
+    <div class="card"><h3>Data</h3><div class="row"><button class="btn" id="demoBtn">Load demo household</button><button class="btn btn-danger" id="clearBtn">Clear all data</button></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $, api, esc, n } = WW;
+  const F = ['name', 'cycle_start', 'cycle_end', 'tariff', 'fixed_charges', 'other_charges', 'currency_symbol', 'tariff_slabs_text', 'duty_percent', 'free_units'];
+  let loc = { location_name: '', latitude: null, longitude: null, country_code: '', region_name: '' };
+
+  function showErr(msg) {
+    WW.$$('.field-err').forEach(e => e.textContent = ''); F.forEach(k => $('#' + k).classList.remove('invalid'));
+    if (!msg) return;
+    const k = F.find(k => msg.includes(`'${k}'`) || msg.toLowerCase().includes(k.replace(/_/g, ' ')));
+    if (k) { $('#' + k).classList.add('invalid'); const fe = $(`.field-err[data-for="${k}"]`); if (fe) fe.textContent = msg; else WW.toast(msg, 'err'); }
+    else WW.toast(msg, 'err');
+  }
+  function fillForm(h) {
+    F.forEach(k => $('#' + k).value = h[k] ?? '');
+    loc = { location_name: h.location_name, latitude: h.latitude, longitude: h.longitude, country_code: h.country_code || '', region_name: h.region_name || '' };
+    $('#tariffSource').innerHTML = h.tariff_source === 'region' ? '<span class="badge b-info">from region profile</span>' : '<span class="badge b-demo">your own values</span>';
+    showRegion();
+    $('#locCurrent').textContent = h.latitude != null ? `Using: ${h.location_name} (${h.latitude.toFixed(2)}, ${h.longitude.toFixed(2)})` : 'No location set — weather features need one.';
+  }
+  async function refreshAll() {
+      fillForm(await api('/api/household'));
+      await loadMeter();
+      const apps = await api('/api/appliances');
+      $('#appList').innerHTML = apps.length ? apps.map(a => `<span class="badge b-info" style="margin:0 6px 6px 0">${a.quantity}× ${esc(a.name)} · ${n(a.wattage, 0)}W</span>`).join('') : 'No appliances yet.';
+      const rs = await api('/api/readings');
+      $('#rdList').innerHTML = rs.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th class="num">Units</th><th></th></tr></thead><tbody>${rs.slice(-6).reverse().map(r => `<tr><td>${r.reading_date} ${r.source === 'demo' ? '<span class="badge b-demo">demo</span>' : ''}</td><td class="num">${n(r.units_consumed, 1)}</td><td class="num"><button class="btn btn-sm btn-danger" data-rd="${r.id}">✕</button></td></tr>`).join('')}</tbody></table></div>${rs.length > 6 ? `<div class="xs muted">Showing latest 6 of ${rs.length}</div>` : ''}` : '<div class="small muted">No readings logged yet.</div>';
+  }
+
+  async function loadAll() {
+    try { await refreshAll(); } catch (e) { WW.toast(e.message, 'err'); }
+  }
+
+  async function showRegion(cc, st) {
+    const card = $('#regionCard');
+    try {
+      const q = cc !== undefined ? `?country=${encodeURIComponent(cc || '')}&state=${encodeURIComponent(st || '')}` : '';
+      if (cc === undefined && !loc.country_code) { card.textContent = "Set your location to see your region's pricing profile."; return; }
+      const p = await api('/api/region/profile' + q);
+      const slabs = (p.slabs || []).map(([u, r]) => (u === null ? 'above' : 'up to ' + u) + ' ' + p.currency_symbol + r).join(' · ');
+      card.innerHTML = `<b>${esc((p.region_name ? p.region_name + ', ' : '') + (p.country_code || ''))}</b> · ${p.level === 'region' ? 'region profile' : p.level === 'country' ? 'country average' : 'no built-in profile'}
+        <span class="badge ${p.confidence === 'low' || p.confidence === 'generic' ? 'b-moderate' : 'b-info'}" style="margin-left:6px">${esc(p.confidence || '')} confidence</span>
+        <div style="margin-top:6px">${p.tariff != null ? `Typical rate ${p.currency_symbol}${p.tariff}/unit` : ''}${slabs ? ' · slabs: ' + slabs : ''}${p.fixed_charges ? ' · fixed ' + p.currency_symbol + p.fixed_charges : ''}${p.duty_percent ? ' · duty ' + p.duty_percent + '%' : ''}</div>
+        <div class="xs muted" style="margin-top:4px">${esc(p.note || '')}</div>`;
+    } catch (e) { card.textContent = 'Could not load regional profile: ' + e.message; }
+  }
+  $('#detectBtn').onclick = e => WW.detectLocation(e.currentTarget, () => loadAll());
+  $('#applyRegion').onclick = async e => {
+    try {
+      await WW.busy(e.currentTarget, () => api('/api/region/apply', { method: 'POST' }));
+      WW.toast('Regional pricing applied — review and adjust the values', 'ok'); loadAll();
+    } catch (er) { WW.toast(er.message, 'err'); }
+  };
+
+  /* ---- Meter details: previous reading, today's reading, budget -> units, remaining, utilisation ---- */
+  const num = id => { const v = $(id).value; return v === '' ? NaN : parseFloat(v); };
+  let serverUnits = null;  // saved total from the server, shown while today's reading is empty
+  function meterPreview() {
+    const prev = num('#m_prev'), budget = num('#m_budget'), before = num('#m_before');
+    const todayEmpty = isNaN(num('#m_today'));
+    const today = todayEmpty ? prev : num('#m_today');
+    const reset = $('#m_reset').checked;
+    $('#m_resetRow').hidden = !reset;
+    let used = null; const warn = [];
+    if (!isNaN(budget) && budget <= 0) warn.push('Monthly budget must be greater than zero.');
+    if (todayEmpty && serverUnits !== null && !isNaN(prev)) used = serverUnits;
+    else if (!isNaN(prev) && !isNaN(today)) {
+      if (reset) { if (!isNaN(before)) used = (before - prev) + today; }
+      else if (today < prev) warn.push("Today's reading is lower than the previous bill reading. If the meter was reset or rolled over, tick the box above.");
+      else used = today - prev;
+    }
+    if (used !== null && !isNaN(budget) && budget > 0) {
+      $('#c_used').textContent = n(used, 1) + ' units';
+      $('#c_rem').textContent = n(budget - used, 1) + ' units';
+      $('#c_rem').style.color = budget - used < 0 ? '#f87171' : '';
+      $('#c_util').textContent = n(100 * used / budget, 1) + '%';
+      if (used > budget) warn.push(`Consumption exceeds your monthly budget by ${n(used - budget, 1)} units.`);
+    } else { $('#c_used').textContent = '–'; $('#c_rem').textContent = '–'; $('#c_util').textContent = '–'; }
+    $('#m_warn').innerHTML = warn.map(w => `<div class="notice ${used !== null && used > budget ? 'err' : 'warn'}" style="margin-bottom:8px">⚠ ${esc(w)}</div>`).join('');
+  }
+  function showMeter(s) {
+    serverUnits = s.units_consumed ?? null;
+    $('#m_prev').value = s.previous_reading ?? ''; $('#m_today').value = s.today_reading ?? ''; $('#m_budget').value = s.monthly_budget ?? '';
+    meterPreview();
+    if (s.previous_reading == null) $('#m_warn').insertAdjacentHTML('afterbegin', '<div class="notice small" style="margin-bottom:8px">Enter your previous bill meter reading to start tracking units.</div>');
+    (s.warnings || []).forEach(w => $('#m_warn').insertAdjacentHTML('beforeend', `<div class="notice warn" style="margin-bottom:8px">⚠ ${esc(w)}</div>`));
+  }
+  async function loadMeter() {
+    try { showMeter(await api('/api/meter')); } catch (e) { WW.toast('Could not load meter details: ' + e.message, 'err'); }
+  }
+  ['#m_prev', '#m_today', '#m_budget', '#m_before'].forEach(id => $(id).oninput = meterPreview);
+  $('#m_reset').onchange = meterPreview;
+  $('#m_save').onclick = async e => {
+    WW.$$('#meterCard .field-err').forEach(x => x.textContent = '');
+    const body = { previous_reading: $('#m_prev').value, today_reading: $('#m_today').value, monthly_budget: $('#m_budget').value,
+                   meter_reset: $('#m_reset').checked, reading_before_reset: $('#m_before').value };
+    let saved;
+    try {
+      saved = await WW.busy(e.currentTarget, () => api('/api/meter', { method: 'PUT', body }));
+    } catch (er) {
+      const msg = er.message, field = /budget/i.test(msg) ? 'budget' : /previous|reset/i.test(msg) && !/today/i.test(msg) ? 'prev' : 'today';
+      const fe = $(`#meterCard .field-err[data-for="${field}"]`); if (fe) fe.textContent = msg; else WW.toast(msg, 'err');
+      return;  // nothing was saved: report the error only
+    }
+    try {
+      showMeter(saved);
+      await refreshAll();  // re-read every dependent field from the server before reporting success
+      WW.toast('Meter details saved', 'ok');
+    } catch (er) {
+      WW.toast('Meter details were saved, but the page could not refresh (' + er.message + '). Reload the page to see them.', 'err');
+    }
+  };
+
+  $('#hhForm').onsubmit = async ev => {
+    ev.preventDefault(); showErr('');
+    const body = { ...loc };
+    F.forEach(k => body[k] = $('#' + k).value);
+    try { await WW.busy($('#saveBtn'), () => api('/api/household', { method: 'PUT', body })); WW.toast('Household saved', 'ok'); loadAll(); }
+    catch (e) { showErr(e.message); }
+  };
+
+  async function search() {
+    const q = $('#citySearch').value.trim(); const box = $('#geoResults');
+    if (q.length < 2) return WW.toast('Type at least 2 characters', 'err');
+    WW.loading(box, 'Searching…');
+    try {
+      const r = await api('/api/geocode?q=' + encodeURIComponent(q));
+      box.innerHTML = r.length ? r.map((x, i) => `<button type="button" class="btn btn-sm" style="width:100%;justify-content:flex-start" data-geo="${i}">📍 ${esc(x.label)}</button>`).join('') : '<div class="notice small">No matching places found. Try a different spelling.</div>';
+      box.onclick = e => { const b = e.target.closest('[data-geo]'); if (!b) return; const x = r[+b.dataset.geo]; loc = { location_name: x.label, latitude: x.latitude, longitude: x.longitude, country_code: x.country_code || '', region_name: x.admin1 || '' }; $('#locCurrent').textContent = `Selected: ${x.label} — click "Save household" to apply.`; showRegion(x.country_code, x.admin1); box.innerHTML = ''; };
+    } catch (e) { WW.errorBox(box, e.message, search); }
+  }
+  $('#searchBtn').onclick = search;
+  $('#citySearch').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); search(); } };
+
+  $('#rdForm').onsubmit = async ev => {
+    ev.preventDefault();
+    try {
+      await api('/api/readings', { method: 'POST', body: { reading_date: $('#rdDate').value || undefined, units_consumed: $('#rdUnits').value, meter_reading: $('#rdMeter').value } });
+      WW.toast('Reading added', 'ok'); $('#rdUnits').value = ''; $('#rdMeter').value = ''; loadAll();
+    } catch (e) { WW.toast(e.message, 'err'); }
+  };
+  $('#rdList').onclick = async e => { const b = e.target.closest('[data-rd]'); if (!b) return; try { await api('/api/readings/' + b.dataset.rd, { method: 'DELETE' }); loadAll(); } catch (er) { WW.toast(er.message, 'err'); } };
+
+  $('#demoBtn').onclick = async e => { if (!confirm('Replace current data with the demo household?')) return; await WW.busy(e.currentTarget, () => api('/api/demo/reset', { method: 'POST' })); location.href = '/dashboard'; };
+  $('#clearBtn').onclick = async () => { if (!confirm('Delete household, appliances and readings?')) return; await api('/api/household/clear', { method: 'POST' }); location.reload(); };
+
+  api('/api/presets').then(p => {
+    $('#presetChips').innerHTML = p.presets.map((x, i) => `<button class="pill" data-p="${i}">${esc(x.name)}</button>`).join('');
+    $('#presetChips').onclick = async e => {
+      const b = e.target.closest('[data-p]'); if (!b) return; const x = p.presets[+b.dataset.p];
+      try { await api('/api/appliances', { method: 'POST', body: { ...x, quantity: 1 } }); WW.toast(x.name + ' added — edit hours in Appliances', 'ok'); loadAll(); } catch (er) { WW.toast(er.message, 'err'); }
+    };
+  });
+  $('#rdDate').value = new Date().toLocaleDateString('en-CA');
+  loadAll();
+})();
+</script>
+{% endblock %}

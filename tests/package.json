@@ -1,0 +1,6 @@
+﻿{
+  "name": "wattwise-ui-tests",
+  "private": true,
+  "description": "Browser-level tests for WATTWISE pages (jsdom). Run: npm install && node ui_setup_meter.js http://127.0.0.1:5001",
+  "dependencies": { "jsdom": "^24.0.0" }
+}

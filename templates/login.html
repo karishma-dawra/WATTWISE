@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Login · WATTWISE{% endblock %}
+{% block mainclass %}container auth-page{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <aside class="auth-aside">
+    <div class="aside-body">
+      <span class="eyebrow" data-i18n="auth.login.eyebrow">Weather-aware energy budgeting</span>
+      <h2 data-i18n="auth.login.aside_title">Your electricity budget, planned around the weather.</h2>
+      <ul class="auth-points">
+        <li><span class="pt-ico" aria-hidden="true">🌤️</span><span data-i18n="auth.login.b1">A daily plan for every appliance, shaped by tomorrow's forecast</span></li>
+        <li><span class="pt-ico" aria-hidden="true">📊</span><span data-i18n="auth.login.b2">Track your units against your monthly budget</span></li>
+        <li><span class="pt-ico" aria-hidden="true">🔔</span><span data-i18n="auth.login.b3">Get alerts before you go over</span></li>
+      </ul>
+    </div>
+  </aside>
+
+  <section class="auth-main" aria-labelledby="loginTitle">
+    <h1 class="auth-title" id="loginTitle" data-i18n="auth.login.welcome">Welcome back</h1>
+    <p class="text2" data-i18n="auth.login.sub">Use your mobile number and password.</p>
+
+    <form id="loginForm" class="auth-form" novalidate>
+      <div class="field">
+        <label for="l_mobile" data-i18n="auth.mobile">Mobile number</label>
+        <div class="input-wrap">
+          <svg class="lead-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>
+          <input id="l_mobile" type="tel" inputmode="numeric" autocomplete="username" maxlength="16" placeholder="10-digit mobile number" data-i18n-placeholder="auth.mobile_ph" required autofocus aria-describedby="l_mobile_err">
+        </div>
+        <div class="field-err" id="l_mobile_err" role="alert"></div>
+      </div>
+
+      <div class="field">
+        <div class="field-row"><label for="l_password" data-i18n="auth.password">Password</label>
+          <a class="small" href="/recover" data-i18n="auth.forgot">Forgot password?</a></div>
+        <div class="input-wrap">
+          <svg class="lead-ico" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+          <input id="l_password" class="has-toggle" type="password" autocomplete="current-password" required aria-describedby="l_password_err l_caps">
+          <button type="button" class="pw-toggle" id="l_toggle" aria-controls="l_password" aria-pressed="false" data-i18n="auth.show">Show</button>
+        </div>
+        <div class="hint-caps" id="l_caps" role="status" hidden data-i18n="auth.capslock">Caps Lock is on</div>
+        <div class="field-err" id="l_password_err" role="alert"></div>
+      </div>
+
+      <div class="error-box" id="l_error" role="alert" hidden></div>
+      <button class="btn btn-primary btn-lg btn-block" type="submit" id="l_submit"><span data-i18n="auth.login.btn">Log in</span></button>
+    </form>
+
+    <div class="auth-divider"><span data-i18n="auth.new_here">New to WATTWISE?</span></div>
+    <a class="btn btn-block" href="/register" data-i18n="auth.create">Create an account</a>
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $ } = WW;
+  const t = k => window.WW.t(k);  // i18n.js puts t() on window.WW, which is not the same object as common.js's WW
+  const mobileEl = $('#l_mobile'), pwEl = $('#l_password'), errBox = $('#l_error'), submit = $('#l_submit');
+  if (new URLSearchParams(location.search).get('msg') === 'out') WW.toast(t('auth.logged_out'), 'ok');
+
+  // a typed number may include +91, spaces or dashes: reduce it to the 10 digits the server expects
+  const digits = v => { let d = String(v).replace(/\D/g, ''); if (d.length === 12 && d.startsWith('91')) d = d.slice(2); return d; };
+  const validMobile = v => /^[6-9]\d{9}$/.test(digits(v));
+  function fieldError(input, errEl, msg) {
+    errEl.textContent = msg || '';
+    input.classList.toggle('invalid', !!msg);
+    if (msg) input.setAttribute('aria-invalid', 'true'); else input.removeAttribute('aria-invalid');
+  }
+
+  // show / hide password
+  $('#l_toggle').onclick = e => {
+    const show = pwEl.type === 'password';
+    pwEl.type = show ? 'text' : 'password';
+    e.currentTarget.setAttribute('aria-pressed', String(show));
+    e.currentTarget.dataset.i18n = show ? 'auth.hide' : 'auth.show';
+    e.currentTarget.textContent = t(e.currentTarget.dataset.i18n);
+    pwEl.focus();
+  };
+  // Caps Lock warning while typing the password
+  const caps = e => { $('#l_caps').hidden = !(e.getModifierState && e.getModifierState('CapsLock')); };
+  pwEl.addEventListener('keydown', caps); pwEl.addEventListener('keyup', caps); pwEl.addEventListener('blur', () => { $('#l_caps').hidden = true; });
+  // clear errors as soon as the user edits
+  mobileEl.addEventListener('input', () => { fieldError(mobileEl, $('#l_mobile_err'), ''); errBox.hidden = true; });
+  pwEl.addEventListener('input', () => { fieldError(pwEl, $('#l_password_err'), ''); errBox.hidden = true; });
+
+  $('#loginForm').onsubmit = async ev => {
+    ev.preventDefault();
+    const mob = mobileEl.value.trim(), pw = pwEl.value;
+    errBox.hidden = true;
+    fieldError(mobileEl, $('#l_mobile_err'), !mob ? t('common.required') : validMobile(mob) ? '' : t('auth.mobile_bad'));
+    fieldError(pwEl, $('#l_password_err'), pw ? '' : t('common.required'));
+    if (!mob || !validMobile(mob)) return mobileEl.focus();
+    if (!pw) return pwEl.focus();
+    try {
+      await WW.busy(submit, () => WW.api('/api/auth/login', { method: 'POST', body: { mobile: digits(mob), password: pw } }));
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard';
+    } catch (e) {
+      // a server that cannot be reached is not a wrong password
+      errBox.textContent = /Cannot reach/.test(e.message) ? e.message : t('auth.wrong');
+      errBox.hidden = false;
+      pwEl.select();
+    }
+  };
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,116 @@
+{
+  "_note": "null = not verified yet. Fill from official tariff orders. App must show 'Rates not verified yet' for null values.",
+  "states": [
+    {
+      "state": "Punjab",
+      "discoms": ["PSPCL"],
+      "regulator": "PSERC",
+      "tariff": {
+        "consumer_category": "domestic",
+        "slabs": [
+          {"from_units": 0, "to_units": 300, "rate_per_unit": 3.85},
+          {"from_units": 301, "to_units": null, "rate_per_unit": 7.05}
+        ],
+        "fixed_charge": null,
+        "fuel_surcharge_pct": null,
+        "electricity_duty_pct": null,
+        "billing_cycle": null,
+        "effective_from": "2026-04-01",
+        "source_url": "https://pserc.punjab.gov.in",
+        "last_verified_on": null,
+        "verification_status": "partial"
+      },
+      "subsidies": [
+        {
+          "scheme_name": "300 free units for domestic consumers",
+          "free_units": 300,
+          "benefit": "First 300 units/month free; if consumption crosses 300, bill rules apply (verify exact rule on PSPCL)",
+          "eligibility": "Domestic consumers",
+          "valid_till": null,
+          "apply_url": "https://pspcl.in",
+          "status": "to_verify"
+        }
+      ]
+    },
+    {
+      "state": "Haryana",
+      "discoms": ["UHBVN", "DHBVN"],
+      "regulator": "HERC",
+      "tariff": {
+        "consumer_category": "domestic",
+        "slabs": [
+          {"from_units": 0, "to_units": 50, "rate_per_unit": 2.20},
+          {"from_units": 51, "to_units": 100, "rate_per_unit": 2.70},
+          {"from_units": 101, "to_units": 150, "rate_per_unit": 2.95},
+          {"from_units": 151, "to_units": null, "rate_per_unit": null}
+        ],
+        "fixed_charge": null,
+        "fuel_surcharge_pct": null,
+        "electricity_duty_pct": null,
+        "billing_cycle": null,
+        "effective_from": "2025-04-01",
+        "source_url": "https://herc.gov.in",
+        "last_verified_on": null,
+        "verification_status": "partial"
+      },
+      "subsidies": []
+    },
+    {
+      "state": "Rajasthan",
+      "discoms": ["JVVNL", "AVVNL", "JdVVNL"],
+      "regulator": "RERC",
+      "tariff": {
+        "consumer_category": "domestic",
+        "slabs": [{"from_units": null, "to_units": null, "rate_per_unit": null}],
+        "fixed_charge": null, "fuel_surcharge_pct": null, "electricity_duty_pct": null,
+        "billing_cycle": null, "effective_from": null,
+        "source_url": "https://rerc.rajasthan.gov.in",
+        "last_verified_on": null, "verification_status": "not_verified"
+      },
+      "subsidies": [
+        {"scheme_name": "Domestic free/discount unit scheme", "benefit": null, "eligibility": null, "valid_till": null, "apply_url": null, "status": "to_verify"}
+      ]
+    },
+    {
+      "state": "Himachal Pradesh",
+      "discoms": ["HPSEBL"],
+      "regulator": "HPERC",
+      "tariff": {
+        "consumer_category": "domestic",
+        "slabs": [{"from_units": null, "to_units": null, "rate_per_unit": null}],
+        "fixed_charge": null, "fuel_surcharge_pct": null, "electricity_duty_pct": null,
+        "billing_cycle": null, "effective_from": "2026-04-01",
+        "source_url": "https://hperc.org",
+        "last_verified_on": null, "verification_status": "not_verified"
+      },
+      "subsidies": [
+        {"scheme_name": "Domestic free/discount unit scheme", "benefit": null, "eligibility": null, "valid_till": null, "apply_url": null, "status": "to_verify"}
+      ]
+    },
+    {
+      "state": "Bihar",
+      "discoms": ["NBPDCL", "SBPDCL"],
+      "regulator": "BERC",
+      "tariff": {
+        "consumer_category": "domestic",
+        "slabs": [{"from_units": null, "to_units": null, "rate_per_unit": null}],
+        "fixed_charge": null, "fuel_surcharge_pct": null, "electricity_duty_pct": null,
+        "billing_cycle": null, "effective_from": null,
+        "source_url": "https://berc.co.in",
+        "last_verified_on": null, "verification_status": "not_verified"
+      },
+      "subsidies": [
+        {"scheme_name": "Domestic free units scheme", "benefit": null, "eligibility": null, "valid_till": null, "apply_url": null, "status": "to_verify"}
+      ]
+    }
+  ],
+  "central_subsidies": [
+    {
+      "scheme_name": "PM Surya Ghar Muft Bijli Yojana",
+      "benefit": "Rooftop solar capital subsidy",
+      "eligibility": "Residential consumers",
+      "apply_url": "https://pmsuryaghar.gov.in",
+      "status": "to_verify"
+    }
+  ]
+}

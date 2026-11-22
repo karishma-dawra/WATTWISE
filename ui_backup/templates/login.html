@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Login · WATTWISE{% endblock %}
+{% block mainclass %}container auth-page{% endblock %}
+{% block content %}
+<div class="auth-card card glass">
+  <h1 class="auth-title" data-i18n="auth.login.title">Log in to WATTWISE</h1>
+  <p class="text2 small" data-i18n="auth.login.sub">Use your mobile number and password.</p>
+  <form id="loginForm" class="stack" novalidate>
+    <div><label data-i18n="auth.mobile">Mobile number</label><input id="l_mobile" inputmode="numeric" autocomplete="username" required>
+      <div class="field-err" id="l_mobile_err"></div></div>
+    <div><label data-i18n="auth.password">Password</label><input id="l_password" type="password" autocomplete="current-password" required>
+      <div class="field-err" id="l_password_err"></div></div>
+    <div class="error-box" id="l_error" hidden></div>
+    <button class="btn btn-primary btn-lg" type="submit" id="l_submit" data-i18n="auth.login.btn">Log in</button>
+  </form>
+  <div class="auth-links">
+    <a href="/register" data-i18n="auth.noaccount">Don't have an account? Register</a>
+    <a href="/recover" data-i18n="auth.forgot">Forgot password?</a>
+  </div>
+  <div class="demo-hint small muted">Demo account: 9999999999 / demo1234</div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+(() => {
+  const { $, t } = WW;
+  if (new URLSearchParams(location.search).get('msg') === 'out') WW.toast(t('auth.logged_out'), 'ok');
+  $('#loginForm').onsubmit = async ev => {
+    ev.preventDefault();
+    const mob = $('#l_mobile').value.trim(), pw = $('#l_password').value;
+    $('#l_error').hidden = true;
+    $('#l_mobile_err').textContent = mob ? '' : t('common.required') ;
+    $('#l_password_err').textContent = pw ? '' : t('common.required');
+    if (!mob || !pw) return;
+    try {
+      await WW.busy($('#l_submit'), () => WW.api('/api/auth/login', { method: 'POST', body: { mobile: mob, password: pw } }));
+      const next = new URLSearchParams(location.search).get('next');
+      location.href = next && next.startsWith('/') ? next : '/dashboard';
+    } catch (e) {
+      $('#l_error').textContent = t('auth.wrong');
+      $('#l_error').hidden = false;
+    }
+  };
+})();
+</script>
+{% endblock %}
