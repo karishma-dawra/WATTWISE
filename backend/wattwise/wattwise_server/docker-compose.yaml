@@ -1,0 +1,44 @@
+services:
+  # Development services
+  postgres:
+    image: ghcr.io/serverpod/postgres:16
+    ports:
+      - "8090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: wattwise
+      POSTGRES_PASSWORD: "yfMf4YOxtLqlNeDCaoGigJghyQHwTQqt"
+    volumes:
+      - wattwise_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6.2.6
+    ports:
+      - "8091:6379"
+    command: redis-server --requirepass "YGbYOYqTzt-yWVu7X0qn-yWuhGKcOiHW"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+  # Test services
+  postgres_test:
+    image: ghcr.io/serverpod/postgres:16
+    ports:
+      - "9090:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: wattwise_test
+      POSTGRES_PASSWORD: "oURp1EUhtSd_qhvmKDEsrQy4tbQRRibh"
+    volumes:
+      - wattwise_test_data:/var/lib/postgresql/data
+
+  redis_test:
+    image: redis:6.2.6
+    ports:
+      - "9091:6379"
+    command: redis-server --requirepass "pSF3SyjpG7-8IX09p8-z2sWzOl5eENwo"
+    environment:
+      - REDIS_REPLICATION_MODE=master
+
+volumes:
+  wattwise_data:
+  wattwise_test_data:

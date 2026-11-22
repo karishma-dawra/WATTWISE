@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>WattWise - smart electricity budget</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">⚡ WattWise</div>
+    <nav id="nav">
+      <a href="#dashboard" data-page="dashboard">Dashboard</a>
+      <a href="#plan" data-page="plan">Today's plan</a>
+      <a href="#appliances" data-page="appliances">Appliances</a>
+      <a href="#usage" data-page="usage">Usage</a>
+      <a href="#settings" data-page="settings">Settings</a>
+    </nav>
+    <div class="scenario">
+      <label for="scenario">Weather</label>
+      <select id="scenario">
+        <option value="live">Live</option>
+        <option value="hot">Hot (sample)</option>
+        <option value="cold">Cold (sample)</option>
+      </select>
+      <span id="source" class="badge"></span>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <main>
+    <!-- DASHBOARD -->
+    <section id="page-dashboard" class="page">
+      <div id="onboarding" class="card" hidden>
+        <h2>Welcome to WattWise</h2>
+        <p>Set your monthly electricity budget and add your appliances to get daily advice.</p>
+        <a class="btn" href="#settings">Set my budget</a>
+      </div>
+      <div id="dashboard-content">
+        <div class="tiles" id="tiles"></div>
+        <div class="card"><h2>Alerts &amp; notes</h2><div id="alerts"></div></div>
+        <div class="grid2">
+          <div class="card">
+            <h2>Daily usage this month</h2>
+            <p class="sub">Units logged per day against an even daily share of the budget.</p>
+            <div class="chart" id="chart-usage"></div>
+          </div>
+          <div class="card">
+            <h2>Coming days: predicted vs allowed</h2>
+            <p class="sub">Forecast-based usage compared with the budget-based daily allowance.</p>
+            <div class="chart" id="chart-forecast"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Where today's energy goes</h2>
+          <p class="sub">Recommended units per appliance for today.</p>
+          <div class="chart" id="chart-appliances"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TODAY'S PLAN -->
+    <section id="page-plan" class="page" hidden>
+      <div class="card"><h2>Today's plan</h2><div id="plan-today"></div></div>
+      <div class="card"><h2>Optimized plan</h2><div id="plan-optimized"></div></div>
+    </section>
+
+    <!-- APPLIANCES -->
+    <section id="page-appliances" class="page" hidden>
+      <div class="card">
+        <h2>Your appliances</h2>
+        <div class="table-wrap"><table id="appliance-table"></table></div>
+      </div>
+      <div class="card">
+        <h2 id="appliance-form-title">Add an appliance</h2>
+        <form id="appliance-form" class="form-row">
+          <input type="hidden" id="a-id">
+          <label>Name<input id="a-name" required placeholder="e.g. AC"></label>
+          <label>Wattage (W)<input id="a-watts" type="number" min="0" step="any" required></label>
+          <label>Quantity<input id="a-qty" type="number" min="1" step="1" value="1" required></label>
+          <label>Hours per day<input id="a-hours" type="number" min="0" max="24" step="any" required></label>
+          <div class="form-actions">
+            <button class="btn" type="submit">Save</button>
+            <button class="btn secondary" type="button" id="a-cancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+        <p class="hint">Appliances are grouped automatically: essential (fridge), weather-dependent (AC, heater) or flexible (washing machine).</p>
+      </div>
+    </section>
+
+    <!-- USAGE -->
+    <section id="page-usage" class="page" hidden>
+      <div class="card">
+        <h2>Log today's usage</h2>
+        <form id="log-form" class="form-row">
+          <label>Units used so far today (kWh)<input id="l-units" type="number" min="0" step="any" required></label>
+          <div class="form-actions"><button class="btn" type="submit">Log</button></div>
+        </form>
+        <p class="hint">Replaces any value already logged for today.</p>
+      </div>
+      <div class="card">
+        <h2>Logged usage</h2>
+        <div class="table-wrap"><table id="usage-table"></table></div>
+      </div>
+      <div class="card demo">
+        <h2>Demo data</h2>
+        <p>Generates fake usage for this month so you can try the advice. <strong>Demo data is not real usage</strong> and replaces everything you have logged.</p>
+        <div class="form-row">
+          <label>Level
+            <select id="demo-level">
+              <option value="normal">Normal (about 60% of budget used)</option>
+              <option value="tight">Tight (about 85% of budget used)</option>
+            </select>
+          </label>
+          <div class="form-actions"><button class="btn warn" id="demo-btn">Load demo data</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section id="page-settings" class="page" hidden>
+      <div class="card">
+        <h2>Household &amp; budget</h2>
+        <form id="household-form" class="form-row">
+          <label>Home name<input id="h-name" value="My Home"></label>
+          <label>City (for live weather)<input id="h-city" value="Delhi"></label>
+          <label>Budget type
+            <select id="h-type"><option value="kwh">kWh (units)</option><option value="rupees">Rupees</option></select>
+          </label>
+          <label>Monthly budget<input id="h-budget" type="number" min="1" step="any" required></label>
+          <label>Tariff (Rs per unit)<input id="h-tariff" type="number" min="0.1" step="any" value="8"></label>
+          <div class="form-actions"><button class="btn" type="submit">Save</button></div>
+        </form>
+        <p class="hint">If you enter rupees, WattWise converts the budget to units using the tariff.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="tooltip" class="tooltip" hidden></div>
+  <div id="toast" class="toast" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
