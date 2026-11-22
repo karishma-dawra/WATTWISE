@@ -8,7 +8,7 @@ from werkzeug.exceptions import HTTPException
 
 import models
 from services import accounts
-from database import get_db, init_db
+from database import get_db, init_db, startup_lock
 from models import ValidationError
 from services import region_service, alert_service, weather_rules_engine as rules_engine, budget_service, recommendation_engine, weather_service
 from services import appliance_catalog, notification_service
@@ -19,7 +19,11 @@ app = Flask(__name__)
 
 
 def _secret_key():
-    """A random key stored in instance/ (never shipped); signs the login session cookie."""
+    """Signs the login session cookie. Set SECRET_KEY in production so logins survive restarts; otherwise a random
+    key is kept in instance/ (never shipped)."""
+    env = os.environ.get("SECRET_KEY")
+    if env:
+        return env.encode()
     path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance", "secret.key")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     if not os.path.exists(path):
@@ -871,9 +875,10 @@ def api_bill():
                                  h["duty_percent"], h["free_units"], h["currency_symbol"], h.get("free_units_mode") or "deduct"))
 
 
-init_db()
-models.ensure_household()
-accounts.ensure_demo_account()
+with startup_lock():
+    init_db()
+    models.ensure_household()
+    accounts.ensure_demo_account()
 
 if __name__ == "__main__":
     app.run(debug=os.environ.get("FLASK_DEBUG") == "1", port=int(os.environ.get("PORT", 8000)))

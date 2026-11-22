@@ -485,7 +485,8 @@ def rebuild_daily():
         if gap > 0:
             per = max(0.0, (r["units_consumed"] - prev_u) / gap)
             for i in range(1, gap + 1):
-                conn.execute("INSERT OR REPLACE INTO daily_consumption (household_id,day,units,source) VALUES (?,?,?,?)",
+                conn.execute("INSERT INTO daily_consumption (household_id,day,units,source) VALUES (?,?,?,?) "
+                             "ON CONFLICT(household_id,day) DO UPDATE SET units=excluded.units, source=excluded.source",
                              (hid(), (prev_d + timedelta(days=i)).isoformat(), round(per, 3), src))
         prev_d, prev_u = d, r["units_consumed"]
     conn.commit()
@@ -587,8 +588,9 @@ def save_daily_plan(rows):
     """Replace the stored daily plan. rows: dicts with day, predicted_kwh, allocation_kwh, optimized_kwh, feasible."""
     conn = get_db()
     for r in rows:
-        conn.execute("REPLACE INTO daily_plan (household_id,day,predicted_kwh,allocation_kwh,optimized_kwh,feasible) "
-                     "VALUES (?,?,?,?,?,?)",
+        conn.execute("INSERT INTO daily_plan (household_id,day,predicted_kwh,allocation_kwh,optimized_kwh,feasible) "
+                     "VALUES (?,?,?,?,?,?) ON CONFLICT(household_id,day) DO UPDATE SET predicted_kwh=excluded.predicted_kwh, "
+                     "allocation_kwh=excluded.allocation_kwh, optimized_kwh=excluded.optimized_kwh, feasible=excluded.feasible",
                      (hid(), r["day"], r["predicted_kwh"], r["allocation_kwh"], r.get("optimized_kwh"),
                       1 if r.get("feasible", True) else 0))
     conn.commit()

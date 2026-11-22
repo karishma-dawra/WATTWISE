@@ -11,7 +11,7 @@ readings, and an appliance expected to use much more than usual.
 `appliance_fault` is a valid type for callers, but nothing here raises it automatically: the app has no per-appliance
 meter, so a fault cannot be detected, only reported by a caller that knows about one.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from database import get_db
 
@@ -19,6 +19,13 @@ TYPES = ("budget_warning", "overuse", "high_consumption", "appliance_fault", "in
 SEVERITIES = ("info", "warning", "critical")
 DEDUPE_HOURS = 24
 KEEP_DAYS = 90                         # old rows are purged so the table does not grow forever
+
+
+def _utc_ago(**delta):
+    """UTC timestamp text (same format as created_at) for `now - delta`; works on SQLite and PostgreSQL."""
+    return (datetime.now(timezone.utc) - timedelta(**delta)).strftime("%Y-%m-%d %H:%M:%S")
+
+
 SPIKE_RATIO, SPIKE_MIN_UNITS = 1.5, 2.0
 OVERUSE_RATIO, OVERUSE_MIN_KWH = 1.25, 0.5
 
@@ -52,14 +59,14 @@ def create_notification(user_id, type, severity, title, message, appliance_id=No
     try:
         dup = conn.execute(
             "SELECT 1 FROM notifications WHERE user_id=? AND type=? AND title=? AND appliance_id IS ? "
-            "AND created_at >= datetime('now', ?) LIMIT 1",
-            (user_id, type, title, appliance_id, f"-{DEDUPE_HOURS} hours")).fetchone()
+            "AND created_at >= ? LIMIT 1",
+            (user_id, type, title, appliance_id, _utc_ago(hours=DEDUPE_HOURS))).fetchone()
         if dup:
             return None
         cur = conn.execute(
             "INSERT INTO notifications (user_id, type, severity, title, message, appliance_id) VALUES (?,?,?,?,?,?)",
             (user_id, type, severity, title, message, appliance_id))
-        conn.execute("DELETE FROM notifications WHERE user_id=? AND created_at < datetime('now', ?)", (user_id, f"-{KEEP_DAYS} days"))
+        conn.execute("DELETE FROM notifications WHERE user_id=? AND created_at < ?", (user_id, _utc_ago(days=KEEP_DAYS)))
         conn.commit()
         return _public(conn.execute("SELECT * FROM notifications WHERE id=?", (cur.lastrowid,)).fetchone())
     finally:

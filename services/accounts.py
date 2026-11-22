@@ -7,7 +7,7 @@ import re
 
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from database import get_db
+from database import get_db, sync_sequences
 from models import ValidationError
 
 LANGUAGES = ("en", "hi")
@@ -152,7 +152,9 @@ def ensure_demo_account():
     if n:
         return
     conn = get_db()
-    conn.execute("INSERT INTO users (id,full_name,mobile,email,city,language,password_hash) VALUES (1,?,?,?,?,?,?)",
+    conn.execute("INSERT INTO users (id,full_name,mobile,email,city,language,password_hash) VALUES (1,?,?,?,?,?,?) ON CONFLICT DO NOTHING",
                  ("My Account", DEMO_MOBILE, "", "Ludhiana", "en", generate_password_hash(DEMO_PASSWORD)))
+    conn.commit()
+    sync_sequences(conn)
     conn.commit()
     conn.close()

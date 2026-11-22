@@ -111,8 +111,8 @@ def norm_model(s):
 def seed(conn):
     """Insert the seed rows that are not there yet (safe to run on every start)."""
     for brand, model, typ, watt, volt, star, kwh in SEED:
-        conn.execute("INSERT OR IGNORE INTO appliances_catalog (brand, model_number, model_key, type, wattage, voltage, star_rating, annual_kwh) "
-                     "VALUES (?,?,?,?,?,?,?,?)", (brand, model, norm_model(model), typ, watt, volt, star, kwh))
+        conn.execute("INSERT INTO appliances_catalog (brand, model_number, model_key, type, wattage, voltage, star_rating, annual_kwh) "
+                     "VALUES (?,?,?,?,?,?,?,?) ON CONFLICT(model_key) DO NOTHING", (brand, model, norm_model(model), typ, watt, volt, star, kwh))
 
 
 def _row(r):

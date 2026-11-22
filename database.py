@@ -1,9 +1,21 @@
-"""SQLite connection helpers and schema for WATTWISE."""
+"""Database helpers and schema for WATTWISE.
+
+Two backends share one code base:
+  * PostgreSQL when the DATABASE_URL environment variable is set (used in production, e.g. a free Neon database,
+    so accounts survive server restarts);
+  * SQLite otherwise (local development and the test-suite).
+The rest of the app talks to a connection with the sqlite3 API (`execute`, `?` placeholders, `.fetchone()`,
+`.lastrowid`, `.rowcount`, rows readable by name or index). For PostgreSQL that API is provided by `_PgConn` below.
+"""
+import contextlib
 import os
+import re
 import sqlite3
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.environ.get("WATTWISE_DB", os.path.join(BASE_DIR, "instance", "wattwise.db"))
+DATABASE_URL = (os.environ.get("DATABASE_URL") or "").strip()
+USE_PG = DATABASE_URL.startswith(("postgres://", "postgresql://"))
 
 SCHEMA = """
 PRAGMA foreign_keys = ON;
@@ -185,7 +197,163 @@ CREATE TABLE IF NOT EXISTS daily_plan (
 """
 
 
+# ------------------------------------------------------------------ PostgreSQL adapter
+_TS_NOW = "to_char(now() at time zone 'utc', 'YYYY-MM-DD HH24:MI:SS')"   # same text format SQLite's CURRENT_TIMESTAMP gives
+_pool = None
+
+
+class _PgRow(tuple):
+    """A result row readable like sqlite3.Row: row[0], row["name"], row.keys(), dict(row)."""
+    def __new__(cls, values, cols):
+        r = super().__new__(cls, values)
+        r._cols = cols
+        return r
+
+    def __getitem__(self, k):
+        if isinstance(k, str):
+            try:
+                return tuple.__getitem__(self, self._cols.index(k))
+            except ValueError:
+                raise IndexError("No item with that key") from None
+        return tuple.__getitem__(self, k)
+
+    def keys(self):
+        return list(self._cols)
+
+
+class _PgCursor:
+    def __init__(self, cur, want_id):
+        self._cur = cur
+        self.rowcount = cur.rowcount
+        self.lastrowid = None
+        self._cols = [d.name for d in cur.description] if cur.description else []
+        if want_id and cur.description:
+            r = cur.fetchone()
+            self.lastrowid = r[0] if r else None
+            self._cols = []
+
+    def fetchone(self):
+        if not self._cols:
+            return None
+        r = self._cur.fetchone()
+        return None if r is None else _PgRow(r, self._cols)
+
+    def fetchall(self):
+        return [_PgRow(r, self._cols) for r in self._cur.fetchall()] if self._cols else []
+
+    def __iter__(self):
+        return iter(self.fetchall())
+
+
+def _translate(sql):
+    """sqlite-flavoured SQL -> PostgreSQL (placeholders, NULL-safe IS, timestamps)."""
+    sql = sql.replace("%", "%%").replace("?", "%s")
+    sql = re.sub(r"\bIS\s+%s", "IS NOT DISTINCT FROM %s", sql)
+    return sql.replace("CURRENT_TIMESTAMP", _TS_NOW)
+
+
+class _PgConn:
+    """A pooled PostgreSQL connection that behaves like the sqlite3 connection the app was written for."""
+
+    def __init__(self, raw):
+        self._raw = raw
+
+    def execute(self, sql, params=()):
+        want_id = bool(re.match(r"\s*INSERT\s+INTO", sql, re.I)) and "RETURNING" not in sql.upper()
+        q = _translate(sql)
+        args = tuple(int(p) if isinstance(p, bool) else p for p in params)
+        if want_id:
+            q += " RETURNING id"
+        cur = self._raw.cursor()
+        cur.execute(q, args)
+        return _PgCursor(cur, want_id)
+
+    def executescript(self, script):
+        self._raw.cursor().execute(script)
+
+    def commit(self):
+        self._raw.commit()
+
+    def rollback(self):
+        self._raw.rollback()
+
+    def close(self):
+        raw, self._raw = self._raw, None
+        if raw is None:
+            return
+        try:
+            raw.rollback()      # anything not committed is discarded, like closing an sqlite3 connection
+        finally:
+            _get_pool().putconn(raw)
+
+    def __del__(self):
+        try:
+            self.close()
+        except Exception:
+            pass
+
+
+def _configure(conn):
+    from psycopg.adapt import Loader
+
+    class _Float(Loader):          # AVG()/SUM() over integers come back as numeric -> plain float, as in SQLite
+        def load(self, data):
+            return float(bytes(data).decode())
+    conn.adapters.register_loader("numeric", _Float)
+
+
+def _get_pool():
+    global _pool
+    if _pool is None:
+        from psycopg_pool import ConnectionPool
+        _pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=int(os.environ.get("DB_POOL_MAX", "8")), open=True,
+                               kwargs={"prepare_threshold": None},        # also safe behind a pgbouncer-style pooler
+                               configure=_configure, check=ConnectionPool.check_connection,
+                               max_idle=120, timeout=30)
+    return _pool
+
+
+def _pg_schema(script):
+    s = re.sub(r"PRAGMA[^;]*;", "", script)
+    s = s.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
+    s = re.sub(r"\bREAL\b", "DOUBLE PRECISION", s)
+    return s.replace("DEFAULT CURRENT_TIMESTAMP", f"DEFAULT ({_TS_NOW})")
+
+
+_SERIAL_TABLES = ("users", "appliances", "readings", "daily_consumption", "weather", "recommendations", "alerts",
+                  "weather_hourly", "hourly_plan", "notifications", "appliances_catalog", "daily_plan")
+
+
+def sync_sequences(conn):
+    """After rows were inserted with an explicit id (the demo account), move each id counter past the largest id."""
+    if USE_PG:
+        for t in _SERIAL_TABLES:
+            conn.execute(f"SELECT setval(pg_get_serial_sequence('{t}', 'id'), COALESCE((SELECT MAX(id) FROM {t}), 0) + 1, false)")
+
+
+@contextlib.contextmanager
+def startup_lock():
+    """Serialises first-time set-up when several server processes start together (PostgreSQL only)."""
+    if not USE_PG:
+        yield
+        return
+    pool = _get_pool()
+    raw = pool.getconn()
+    try:
+        raw.cursor().execute("SELECT pg_advisory_lock(727001)")
+        try:
+            yield
+        finally:
+            raw.rollback()
+            raw.cursor().execute("SELECT pg_advisory_unlock(727001)")
+            raw.commit()
+    finally:
+        pool.putconn(raw)
+
+
 def get_db():
+    if USE_PG:
+        return _PgConn(_get_pool().getconn())
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -233,13 +401,20 @@ MIGRATIONS = [  # (table, column, DDL) — added to databases created by earlier
 
 def init_db():
     conn = get_db()
-    conn.executescript(SCHEMA)
-    for table, col, ddl in MIGRATIONS:
-        if col not in [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
+    if USE_PG:
+        conn.executescript(_pg_schema(SCHEMA))
+        for table, col, ddl in MIGRATIONS:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col} {_pg_schema(ddl)}")
+    else:
+        conn.executescript(SCHEMA)
+        for table, col, ddl in MIGRATIONS:
+            if col not in [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {ddl}")
     from services import appliance_catalog
     appliance_catalog.seed(conn)
     conn.execute("UPDATE appliances SET need_hours = daily_hours WHERE need_hours IS NULL")  # typical full-use hours
     conn.execute("UPDATE household SET meter_base = start_meter_reading WHERE meter_base IS NULL AND start_meter_reading IS NOT NULL")
+    conn.commit()
+    sync_sequences(conn)
     conn.commit()
     conn.close()

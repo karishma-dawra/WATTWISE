@@ -77,6 +77,19 @@ Indian state electricity tariffs, DISCOM/regulator details and subsidies live in
 
 A sun / moon button in the navbar (also on the login and register pages) switches between the dark and light theme: the **sun** shows in the dark theme (click for light), the **moon** shows in the light theme (click for dark). The choice is saved in the browser (`localStorage`, key `ww_theme`), applied before the page paints so there is no flash, and followed by other open tabs. Dark is the default. Colours come from CSS variables in `static/css/style.css` (`:root` for dark, `:root[data-theme="light"]` for light); charts read the same variables (`WW.setTheme`, `WW.cssVar` in `common.js`). Tests: `tests/ui_theme.js`.
 
+## Deploy (Render + free Neon Postgres)
+
+Locally the app uses SQLite (`instance/wattwise.db`). In production set these environment variables and it uses
+PostgreSQL instead, so accounts and data survive restarts (Render's free disk is wiped on every restart):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | the Postgres connection string from Neon (`postgresql://...?sslmode=require`) |
+| `SECRET_KEY` | any long random string; keeps people logged in across restarts |
+
+Render settings: Build `pip install -r requirements.txt`, Start `gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120`.
+Tables are created automatically on first start.
+
 ## Data honesty
 
 * Consumption history comes only from readings the user logs. Daily values are derived by spreading units evenly between readings.
