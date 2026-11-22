@@ -194,3 +194,6 @@ const WW = (() => {
 
   return { detectLocation, $, $$, api, toast, esc, n, money, dayName, shortDate, dur, riskBadge, riskColor, alertHTML, wxIcon, loading, errorBox, busy, t12, fmtWindows, scenarioView, refreshNotifications: pollNotifications, cssVar, setTheme, currentTheme, COLORS };
 })();
+// Make `WW` and `window.WW` the same object: i18n.js adds t(), lang() and setLanguage() to window.WW,
+// and pages such as register and profile call them through `WW`.
+window.WW = WW;
