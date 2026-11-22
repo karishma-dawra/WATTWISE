@@ -307,7 +307,7 @@ def _get_pool():
     if _pool is None:
         from psycopg_pool import ConnectionPool
         _pool = ConnectionPool(DATABASE_URL, min_size=1, max_size=int(os.environ.get("DB_POOL_MAX", "8")), open=True,
-                               kwargs={"prepare_threshold": None},        # also safe behind a pgbouncer-style pooler
+                               kwargs={"prepare_threshold": None, "connect_timeout": 15},   # prepared statements off: safe behind a pgbouncer-style pooler
                                configure=_configure, check=ConnectionPool.check_connection,
                                max_idle=120, timeout=30)
     return _pool
@@ -333,22 +333,29 @@ def sync_sequences(conn):
 
 @contextlib.contextmanager
 def startup_lock():
-    """Serialises first-time set-up when several server processes start together (PostgreSQL only)."""
+    """Serialises first-time set-up when several server processes start together (PostgreSQL only).
+
+    Uses a transaction-level advisory lock: it is released automatically when the transaction ends, so it can never
+    be left behind (a session-level lock can get stuck behind a pgbouncer-style pooler such as Neon's). Waiting is
+    capped at 30 seconds; after that start-up carries on, because the set-up statements are safe to repeat."""
     if not USE_PG:
         yield
         return
     pool = _get_pool()
     raw = pool.getconn()
     try:
-        raw.cursor().execute("SELECT pg_advisory_lock(727001)")
         try:
-            yield
-        finally:
+            cur = raw.cursor()
+            cur.execute("SET LOCAL lock_timeout = '30s'")
+            cur.execute("SELECT pg_advisory_xact_lock(727002)")
+        except Exception:
             raw.rollback()
-            raw.cursor().execute("SELECT pg_advisory_unlock(727001)")
-            raw.commit()
+        yield
     finally:
-        pool.putconn(raw)
+        try:
+            raw.rollback()
+        finally:
+            pool.putconn(raw)
 
 
 def get_db():
